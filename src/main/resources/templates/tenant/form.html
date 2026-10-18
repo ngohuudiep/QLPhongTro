@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${tenant.tenantId != null ? 'Cập nhật khách thuê' : 'Thêm khách thuê mới'} + ' - Quản lý phòng trọ'">Thêm/Sửa khách thuê</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h4 class="card-title mb-0 fw-bold text-primary" 
+                        th:text="${tenant.tenantId != null ? 'Chỉnh sửa thông tin khách thuê' : 'Thêm khách thuê mới'}">
+                        Thông tin khách thuê
+                    </h4>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Form thêm/sửa liên kết Model Tenant -->
+                    <form th:action="@{/tenants/save}" th:object="${tenant}" method="post">
+                        <!-- Trường ID ẩn (dùng khi cập nhật) -->
+                        <input type="hidden" th:field="*{tenantId}" />
+
+                        <div class="row g-3">
+                            <!-- 1. Họ và tên (Bắt buộc) -->
+                            <div class="col-md-6">
+                                <label for="fullName" class="form-label fw-semibold">
+                                    Họ và tên <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" 
+                                       th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''"
+                                       id="fullName" th:field="*{fullName}" 
+                                       placeholder="Ví dụ: Nguyễn Văn A" required maxlength="150">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}">
+                                    Họ tên không hợp lệ
+                                </div>
+                            </div>
+
+                            <!-- 2. Số CCCD/CMND (Bắt buộc) -->
+                            <div class="col-md-6">
+                                <label for="idNumber" class="form-label fw-semibold">
+                                    Số CCCD/CMND <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" 
+                                       th:classappend="${#fields.hasErrors('idNumber')} ? 'is-invalid' : ''"
+                                       id="idNumber" th:field="*{idNumber}" 
+                                       placeholder="12 chữ số CCCD" required maxlength="20"
+                                       pattern="[0-9]{9,12}" title="Vui lòng nhập từ 9 đến 12 chữ số">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('idNumber')}" th:errors="*{idNumber}">
+                                    Số CCCD không hợp lệ hoặc đã tồn tại
+                                </div>
+                            </div>
+
+                            <!-- 3. Số điện thoại (Bắt buộc) -->
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label fw-semibold">
+                                    Số điện thoại <span class="text-danger">*</span>
+                                </label>
+                                <input type="tel" class="form-control" 
+                                       th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid' : ''"
+                                       id="phone" th:field="*{phone}" 
+                                       placeholder="Ví dụ: 0912345678" required maxlength="20"
+                                       pattern="^(0|\+84)[0-9]{9,10}$" title="Số điện thoại gồm 10 số (bắt đầu bằng 0 hoặc +84)">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}">
+                                    Số điện thoại không hợp lệ
+                                </div>
+                            </div>
+
+                            <!-- 4. Ngày sinh (Tùy chọn) -->
+                            <div class="col-md-6">
+                                <label for="dateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
+                                <input type="date" class="form-control" 
+                                       th:classappend="${#fields.hasErrors('dateOfBirth')} ? 'is-invalid' : ''"
+                                       id="dateOfBirth" th:field="*{dateOfBirth}">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('dateOfBirth')}" th:errors="*{dateOfBirth}">
+                                    Ngày sinh không hợp lệ
+                                </div>
+                            </div>
+
+                            <!-- 5. Quê quán (Tùy chọn) -->
+                            <div class="col-md-6">
+                                <label for="hometown" class="form-label fw-semibold">Quê quán</label>
+                                <input type="text" class="form-control" 
+                                       th:classappend="${#fields.hasErrors('hometown')} ? 'is-invalid' : ''"
+                                       id="hometown" th:field="*{hometown}" 
+                                       placeholder="Tỉnh/Thành phố quê quán" maxlength="255">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('hometown')}" th:errors="*{hometown}">
+                                    Quê quán không hợp lệ
+                                </div>
+                            </div>
+
+                            <!-- 6. Email (Tùy chọn) -->
+                            <div class="col-md-6">
+                                <label for="email" class="form-label fw-semibold">Địa chỉ Email</label>
+                                <input type="email" class="form-control" 
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                                       id="email" th:field="*{email}" 
+                                       placeholder="example@gmail.com" maxlength="150">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
+                                    Email không đúng định dạng
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Các nút Thao tác -->
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a th:href="@{/tenants}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i> Lưu thông tin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

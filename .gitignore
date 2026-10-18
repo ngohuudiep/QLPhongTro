@@ -1,0 +1,68 @@
+# ===========================
+# Spring Boot / Maven
+# ===========================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven wrapper
+.mvn/wrapper/maven-wrapper.properties
+
+# ===========================
+# IDE - IntelliJ IDEA
+# ===========================
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# IDE - VS Code
+.vscode/
+*.code-workspace
+
+# IDE - Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+
+# ===========================
+# OS
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Logs
+# ===========================
+*.log
+logs/
+spring.log
+
+# ===========================
+# Sensitive config (bảo mật)
+# ===========================
+# Uncomment nếu không muốn push application.properties
+# src/main/resources/application.properties
+# src/main/resources/application-prod.properties
+
+# ===========================
+# Build artifacts
+# ===========================
+*.jar
+*.war
+*.ear
+*.class
+
+# ===========================
+# Package managers
+# ===========================
+node_modules/
+npm-debug.log

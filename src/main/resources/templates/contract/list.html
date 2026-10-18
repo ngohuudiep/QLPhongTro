@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách hợp đồng - Quản lý phòng trọ</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <!-- Thông báo kết quả Flash Message -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <span th:text="${successMessage}">Thao tác thành công!</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${errorMessage}">Đã xảy ra lỗi!</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h4 class="card-title mb-0 fw-bold text-primary">
+                <i class="bi bi-file-earmark-text me-2"></i>Danh sách hợp đồng thuê phòng (Contracts)
+            </h4>
+            <a th:href="@{/contracts/new}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Lập hợp đồng mới
+            </a>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle mb-0">
+                    <thead class="table-primary text-nowrap">
+                        <tr>
+                            <th class="text-center" style="width: 70px;">ID</th>
+                            <th>Mã HĐ</th>
+                            <th>Phòng</th>
+                            <th>Người đại diện</th>
+                            <th>Thời hạn thuê</th>
+                            <th class="text-end">Tiền cọc</th>
+                            <th class="text-center">Kỳ TT</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center" style="width: 170px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="c : ${contracts}">
+                            <td class="text-center fw-bold text-secondary" th:text="${c.contractId}">1</td>
+                            <td>
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis font-monospace fw-bold" 
+                                      th:text="${c.contractCode}">HD-2026-001</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary" th:text="${c.room != null ? c.room.roomCode : '—'}">P.101</span>
+                                <small class="text-muted d-block" 
+                                       th:text="${c.room != null and c.room.building != null ? c.room.building.buildingName : ''}"></small>
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-dark" th:text="${c.representative != null ? c.representative.fullName : '—'}">Nguyễn Văn A</span>
+                                <small class="text-muted d-block" th:text="${c.representative != null ? c.representative.phone : ''}"></small>
+                            </td>
+                            <td>
+                                <small class="d-block" th:text="'Từ: ' + ${#temporals.format(c.startDate, 'dd/MM/yyyy')}"></small>
+                                <small class="d-block text-muted" th:text="'Đến: ' + ${#temporals.format(c.endDate, 'dd/MM/yyyy')}"></small>
+                            </td>
+                            <td class="text-end font-monospace fw-semibold text-success" 
+                                th:text="${c.depositAmount != null ? #numbers.formatDecimal(c.depositAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">
+                                3,000,000 ₫
+                            </td>
+                            <td class="text-center" th:text="${c.billingCycleMonths != null ? c.billingCycleMonths + ' tháng' : '1 tháng'}">
+                                1 tháng
+                            </td>
+                            <td class="text-center">
+                                <span th:if="${c.status == 'Hiệu lực' or c.status == 'ACTIVE'}" class="badge bg-success">Hiệu lực</span>
+                                <span th:if="${c.status == 'Hết hạn' or c.status == 'EXPIRED'}" class="badge bg-secondary">Hết hạn</span>
+                                <span th:if="${c.status == 'Đã hủy' or c.status == 'CANCELLED'}" class="badge bg-danger">Đã hủy</span>
+                                <span th:if="${c.status != 'Hiệu lực' and c.status != 'ACTIVE' and c.status != 'Hết hạn' and c.status != 'EXPIRED' and c.status != 'Đã hủy' and c.status != 'CANCELLED'}" 
+                                      class="badge bg-info text-dark" th:text="${c.status}">Khác</span>
+                            </td>
+                            <td class="text-center">
+                                <a th:href="@{/contracts/edit/{id}(id=${c.contractId})}" 
+                                   class="btn btn-sm btn-outline-primary me-1" title="Sửa">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </a>
+                                <a th:href="@{/contracts/delete/{id}(id=${c.contractId})}" 
+                                   class="btn btn-sm btn-outline-danger" title="Xóa"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa hợp đồng này không?');">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            </td>
+                        </tr>
+
+                        <tr th:if="${#lists.isEmpty(contracts)}">
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-file-earmark-x fs-2 d-block mb-2 text-secondary"></i>
+                                Chưa có hợp đồng thuê nào trong hệ thống.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

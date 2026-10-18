@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Tìm phòng trọ giá rẻ, tiện nghi - Hệ thống quản lý phòng trọ chuyên nghiệp">
+    <title>Tìm Phòng Trọ – QL Phòng Trọ</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary:    #2563eb;
+            --primary-dk: #1d4ed8;
+            --accent:     #f97316;
+            --success:    #16a34a;
+            --bg-soft:    #f1f5f9;
+            --card-radius: 16px;
+        }
+
+        * { font-family: 'Inter', sans-serif; }
+
+        body { background: var(--bg-soft); }
+
+        /* ===== NAVBAR ===== */
+        .navbar-brand { font-weight: 700; letter-spacing: -0.3px; }
+
+        /* ===== HERO ===== */
+        .hero {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0ea5e9 100%);
+            padding: 60px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 0.85rem; font-weight: 500; color: #fff;
+            margin-bottom: 18px;
+        }
+        .hero h1 { font-size: 2.6rem; font-weight: 800; color: #fff; letter-spacing: -1px; }
+        .hero p   { color: rgba(255,255,255,0.8); font-size: 1.1rem; }
+
+        /* ===== STATS STRIP ===== */
+        .stats-strip {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            margin-top: -36px; position: relative; z-index: 10;
+        }
+        .stat-item { border-right: 1px solid #f1f5f9; }
+        .stat-item:last-child { border-right: none; }
+        .stat-number { font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1; }
+        .stat-label  { font-size: 0.8rem; color: #94a3b8; font-weight: 500; }
+
+        /* ===== FILTER BAR ===== */
+        .filter-section { padding: 36px 0 20px; }
+        .filter-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            border: 2px solid #e2e8f0;
+            border-radius: 100px;
+            padding: 8px 20px;
+            font-size: 0.9rem; font-weight: 500;
+            color: #64748b; background: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .filter-pill:hover, .filter-pill.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+        .search-box {
+            border: 2px solid #e2e8f0;
+            border-radius: 100px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 300px;
+        }
+        .search-box:focus { border-color: var(--primary); }
+        .search-btn {
+            border-radius: 100px;
+            padding: 10px 24px;
+            background: var(--primary);
+            color: #fff; border: none;
+            font-weight: 600; font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .search-btn:hover { background: var(--primary-dk); transform: translateY(-1px); }
+
+        /* ===== ROOM CARD ===== */
+        .room-card {
+            background: #fff;
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .room-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 32px rgba(37,99,235,0.14);
+        }
+        .room-img-wrap {
+            position: relative;
+            height: 200px; overflow: hidden;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        }
+        .room-img-wrap img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .room-card:hover .room-img-wrap img { transform: scale(1.05); }
+        .room-img-placeholder {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #93c5fd; gap: 8px;
+        }
+        .room-img-placeholder i { font-size: 3.5rem; }
+        .room-img-placeholder span { font-size: 0.8rem; font-weight: 500; }
+
+        .badge-status {
+            position: absolute; top: 12px; left: 12px;
+            background: #16a34a; color: #fff;
+            font-size: 0.75rem; font-weight: 600;
+            padding: 4px 12px; border-radius: 100px;
+        }
+        .room-code-badge {
+            position: absolute; top: 12px; right: 12px;
+            background: rgba(0,0,0,0.55); color: #fff;
+            font-size: 0.72rem; font-weight: 600;
+            padding: 4px 10px; border-radius: 8px;
+            backdrop-filter: blur(6px);
+        }
+
+        .card-body-custom { padding: 18px 20px 20px; }
+        .room-title {
+            font-size: 0.95rem; font-weight: 700;
+            color: #1e293b;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+            min-height: 44px;
+        }
+        .room-meta { display: flex; gap: 14px; margin: 10px 0; }
+        .room-meta-item {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.82rem; color: #64748b; font-weight: 500;
+        }
+        .room-meta-item i { color: #94a3b8; font-size: 0.9rem; }
+
+        .price-display {
+            font-size: 1.45rem; font-weight: 800;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+        .price-unit { font-size: 0.78rem; font-weight: 500; color: #94a3b8; margin-left: 2px; }
+
+        .btn-register {
+            background: linear-gradient(135deg, var(--primary), #0ea5e9);
+            color: #fff; border: none;
+            border-radius: 10px; padding: 10px 0;
+            font-weight: 600; font-size: 0.9rem; width: 100%;
+            transition: opacity 0.2s, transform 0.15s;
+            text-decoration: none; display: block; text-align: center;
+            margin-top: 14px;
+        }
+        .btn-register:hover { opacity: 0.9; transform: translateY(-1px); color: #fff; }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #94a3b8;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 16px; display: block; }
+
+        /* ===== FOOTER ===== */
+        footer { background: #1e293b; color: #94a3b8; padding: 30px 0; margin-top: 60px; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 576px) {
+            .hero h1 { font-size: 1.8rem; }
+            .search-box { width: 100%; }
+            .filter-pills-wrap { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background: #1e293b; box-shadow: 0 2px 12px rgba(0,0,0,0.15);">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" th:href="@{/}">
+            <i class="bi bi-houses-fill text-primary fs-4"></i>
+            <span>QL PHÒNG TRỌ</span>
+        </a>
+
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item">
+                    <a class="nav-link active fw-semibold" th:href="@{/}">
+                        <i class="bi bi-house me-1"></i> Trang chủ
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/rooms/list}">
+                        <i class="bi bi-door-open me-1"></i> Danh sách phòng
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Khu vực đăng nhập / thông tin người dùng -->
+            <div class="d-flex align-items-center gap-2">
+
+                <!-- Chưa đăng nhập -->
+                <div sec:authorize="isAnonymous()">
+                    <a th:href="@{/login}" class="btn btn-outline-light btn-sm px-4 rounded-pill">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+                    </a>
+                </div>
+
+                <!-- Đã đăng nhập -->
+                <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">
+                    <span class="text-white-50 small">
+                        <i class="bi bi-person-circle me-1"></i>
+                        <span sec:authentication="name">Người dùng</span>
+                    </span>
+
+                    <!-- Nút vào trang ADMIN (chỉ hiển thị với ADMIN) -->
+                    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}" class="btn btn-warning btn-sm px-3 rounded-pill fw-semibold">
+                        <i class="bi bi-gear me-1"></i> Admin
+                    </a>
+
+                    <!-- Nút vào trang STAFF -->
+                    <a sec:authorize="hasAnyRole('STAFF','ADMIN')" th:href="@{/staff}" class="btn btn-info btn-sm px-3 rounded-pill fw-semibold text-white">
+                        <i class="bi bi-clipboard me-1"></i> Quản lý
+                    </a>
+
+                    <!-- Đăng xuất -->
+                    <form th:action="@{/logout}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-outline-danger btn-sm px-3 rounded-pill">
+                            <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ===================== HERO BANNER ===================== -->
+<section class="hero">
+    <div class="container text-center position-relative">
+        <div class="hero-badge">
+            <i class="bi bi-patch-check-fill"></i>
+            <span th:text="${totalAvailable} + ' phòng đang trống sẵn sàng cho thuê'">Đang tải...</span>
+        </div>
+        <h1 class="mb-3">Tìm Phòng Trọ Ưng Ý<br>Nhanh Chóng &amp; Dễ Dàng</h1>
+        <p class="mb-0">Phòng trọ giá tốt, nội thất đầy đủ, an ninh đảm bảo – Đặt chỗ ngay hôm nay!</p>
+    </div>
+</section>
+
+<!-- ===================== STATS STRIP ===================== -->
+<div class="container" style="margin-top: -36px; position: relative; z-index: 10;">
+    <div class="stats-strip px-2">
+        <div class="row g-0 text-center">
+            <div class="col-4 stat-item py-4">
+                <div class="stat-number" th:text="${totalAvailable}">0</div>
+                <div class="stat-label mt-1">Phòng trống</div>
+            </div>
+            <div class="col-4 stat-item py-4">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label mt-1">Hỗ trợ</div>
+            </div>
+            <div class="col-4 py-4">
+                <div class="stat-number">100%</div>
+                <div class="stat-label mt-1">Uy tín</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== FILTER BAR ===================== -->
+<section class="filter-section">
+    <div class="container">
+
+        <!-- Thanh tìm kiếm -->
+        <form th:action="@{/}" method="get" class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+            <input type="hidden" name="priceRange" th:value="${selectedFilter}">
+            <input
+                id="search-input"
+                class="search-box"
+                type="text"
+                name="keyword"
+                th:value="${keyword}"
+                placeholder="🔍  Tìm theo tên phòng, mô tả..."
+                autocomplete="off">
+            <button type="submit" class="search-btn">
+                <i class="bi bi-search me-1"></i> Tìm kiếm
+            </button>
+            <a th:href="@{/}" class="btn btn-outline-secondary rounded-pill px-4" th:if="${!keyword.isEmpty() or selectedFilter != 'all'}">
+                <i class="bi bi-x-circle me-1"></i> Xóa bộ lọc
+            </a>
+        </form>
+
+        <!-- Bộ lọc khoảng giá -->
+        <div class="d-flex align-items-center gap-2 flex-wrap filter-pills-wrap">
+            <span class="text-muted small fw-semibold me-1">Lọc theo giá:</span>
+
+            <a th:href="@{/(priceRange='all', keyword=${keyword})}"
+               class="filter-pill" th:classappend="${selectedFilter == 'all'} ? 'active' : ''"
+               id="filter-all">
+                <i class="bi bi-grid"></i> Tất cả
+            </a>
+
+            <a th:href="@{/(priceRange='under2m', keyword=${keyword})}"
+               class="filter-pill" th:classappend="${selectedFilter == 'under2m'} ? 'active' : ''"
+               id="filter-under2m">
+                <i class="bi bi-arrow-down-circle"></i> Dưới 2 triệu
+            </a>
+
+            <a th:href="@{/(priceRange='2to4m', keyword=${keyword})}"
+               class="filter-pill" th:classappend="${selectedFilter == '2to4m'} ? 'active' : ''"
+               id="filter-2to4m">
+                <i class="bi bi-dash-circle"></i> 2 – 4 triệu
+            </a>
+
+            <a th:href="@{/(priceRange='over4m', keyword=${keyword})}"
+               class="filter-pill" th:classappend="${selectedFilter == 'over4m'} ? 'active' : ''"
+               id="filter-over4m">
+                <i class="bi bi-arrow-up-circle"></i> Trên 4 triệu
+            </a>
+        </div>
+
+        <!-- Kết quả đang lọc -->
+        <div class="mt-3 text-muted small" th:if="${!rooms.isEmpty()}">
+            Hiển thị <strong th:text="${rooms.size()}">0</strong> phòng
+            <span th:if="${!keyword.isEmpty()}"> tìm kiếm "<strong th:text="${keyword}"></strong>"</span>
+            <span th:if="${selectedFilter != 'all'}" th:switch="${selectedFilter}">
+                <span th:case="'under2m'"> • Dưới 2 triệu</span>
+                <span th:case="'2to4m'">  • 2 – 4 triệu</span>
+                <span th:case="'over4m'"> • Trên 4 triệu</span>
+            </span>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== ROOM GRID ===================== -->
+<main class="container pb-5">
+
+    <!-- Thông báo khi không có phòng -->
+    <div th:if="${rooms.isEmpty()}" class="empty-state">
+        <i class="bi bi-building-slash text-primary opacity-50"></i>
+        <h5 class="fw-semibold text-dark">Không tìm thấy phòng phù hợp</h5>
+        <p class="text-muted mb-4">Thử thay đổi bộ lọc giá hoặc từ khóa tìm kiếm khác nhé!</p>
+        <a th:href="@{/}" class="btn btn-primary rounded-pill px-5">
+            <i class="bi bi-arrow-left me-1"></i> Xem tất cả phòng
+        </a>
+    </div>
+
+    <!-- Grid phòng -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4" th:unless="${rooms.isEmpty()}">
+
+        <div class="col" th:each="room : ${rooms}">
+            <div class="room-card h-100">
+
+                <!-- Ảnh phòng -->
+                <div class="room-img-wrap">
+                    <!-- Ảnh thật nếu có image_url -->
+                    <img th:if="${room.imageUrl != null and !room.imageUrl.isEmpty()}"
+                         th:src="${room.imageUrl}"
+                         th:alt="${room.title}"
+                         loading="lazy"
+                         onerror="this.parentElement.innerHTML=this.parentElement.innerHTML.replace(this.outerHTML,'<div class=\'room-img-placeholder\'><i class=\'bi bi-image-alt\'></i><span>Chưa có ảnh</span></div>')">
+
+                    <!-- Placeholder nếu chưa có ảnh -->
+                    <div class="room-img-placeholder"
+                         th:unless="${room.imageUrl != null and !room.imageUrl.isEmpty()}">
+                        <i class="bi bi-house-door"></i>
+                        <span>Phòng trọ</span>
+                    </div>
+
+                    <!-- Badge trạng thái -->
+                    <span class="badge-status">
+                        <i class="bi bi-circle-fill me-1" style="font-size:0.55rem"></i>
+                        Còn trống
+                    </span>
+
+                    <!-- Mã phòng -->
+                    <span class="room-code-badge" th:text="${room.roomCode}">P-01</span>
+                </div>
+
+                <!-- Nội dung card -->
+                <div class="card-body-custom">
+
+                    <!-- Tiêu đề bài đăng -->
+                    <div class="room-title" th:text="${room.title}">Tiêu đề phòng trọ</div>
+
+                    <!-- Thông tin diện tích -->
+                    <div class="room-meta">
+                        <div class="room-meta-item">
+                            <i class="bi bi-aspect-ratio"></i>
+                            <span th:text="${room.area != null ? room.area + ' m²' : 'Chưa cập nhật'}">-- m²</span>
+                        </div>
+                        <div class="room-meta-item">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>Phòng trọ</span>
+                        </div>
+                    </div>
+
+                    <!-- Phần mô tả ngắn -->
+                    <p class="text-muted small mb-2"
+                       style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;"
+                       th:text="${room.description != null ? room.description : 'Liên hệ để biết thêm thông tin chi tiết.'}">
+                        Mô tả phòng...
+                    </p>
+
+                    <!-- Giá tiền nổi bật -->
+                    <div class="d-flex align-items-baseline gap-1 mt-2">
+                        <span class="price-display"
+                              th:text="${#numbers.formatDecimal(room.price, 0, 'COMMA', 0, 'POINT')}">0</span>
+                        <span class="price-unit">đ / tháng</span>
+                    </div>
+
+                    <!-- Nút "Đăng ký thuê" - KHÔNG có nút Sửa / Xóa -->
+                    <a th:href="@{/register-room(roomCode=${room.roomCode})}"
+                       class="btn-register"
+                       id="btn-register-room">
+                        <i class="bi bi-pencil-square me-1"></i> Đăng ký thuê
+                    </a>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-houses-fill text-primary fs-5"></i>
+                    <span class="text-white fw-bold">QL Phòng Trọ</span>
+                </div>
+                <p class="small mb-0">Hệ thống quản lý phòng trọ chuyên nghiệp, minh bạch, tiện lợi.</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <p class="small mb-0">
+                    Xây dựng với <i class="bi bi-heart-fill text-danger"></i> bởi
+                    <strong class="text-white">Spring Boot &amp; Thymeleaf</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Highlight từ khóa tìm kiếm trong kết quả
+    const keyword = /*[[${keyword}]]*/ '';
+    if (keyword && keyword.trim()) {
+        document.querySelectorAll('.room-title').forEach(el => {
+            const re = new RegExp(`(${keyword.trim()})`, 'gi');
+            el.innerHTML = el.textContent.replace(re, '<mark class="bg-warning rounded px-1">$1</mark>');
+        });
+    }
+
+    // Fade-in animation cho cards khi scroll
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach((entry, i) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, i * 60);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.room-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.4s ease, transform 0.4s ease, box-shadow 0.25s ease';
+        observer.observe(card);
+    });
+</script>
+
+</body>
+</html>

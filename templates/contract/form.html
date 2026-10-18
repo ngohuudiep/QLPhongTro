@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${contract.contractId != null ? 'Cập nhật hợp đồng' : 'Lập hợp đồng mới'} + ' - Quản lý phòng trọ'">Hợp đồng</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h4 class="card-title mb-0 fw-bold text-primary">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        <span th:text="${contract.contractId != null ? 'Chỉnh sửa hợp đồng thuê' : 'Lập hợp đồng thuê phòng mới'}"></span>
+                    </h4>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form th:action="@{/contracts/save}" th:object="${contract}" method="post">
+                        <!-- ID ẩn -->
+                        <input type="hidden" th:field="*{contractId}" />
+
+                        <div class="row g-3">
+                            <!-- 1. Mã hợp đồng -->
+                            <div class="col-md-6">
+                                <label for="contractCode" class="form-label fw-semibold">Mã hợp đồng <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="contractCode" th:field="*{contractCode}" 
+                                       placeholder="Ví dụ: HD-2026-001" required maxlength="30">
+                            </div>
+
+                            <!-- 2. Chọn Phòng thuê -->
+                            <div class="col-md-6">
+                                <label for="room" class="form-label fw-semibold">Phòng thuê <span class="text-danger">*</span></label>
+                                <select class="form-select" id="room" th:field="*{room}" required>
+                                    <option value="" disabled selected>-- Chọn phòng trọ --</option>
+                                    <option th:each="r : ${rooms}" 
+                                            th:value="${r.roomId}" 
+                                            th:text="${r.roomCode + ' - Trạng thái: ' + r.status + ' (' + (r.building != null ? r.building.buildingName : '') + ')'}">
+                                        P.101
+                                    </option>
+                                </select>
+                                <div class="form-text text-primary">
+                                    <i class="bi bi-info-circle me-1"></i>Khi tạo thành công, phòng sẽ tự động chuyển sang <strong>Đang thuê</strong>.
+                                </div>
+                            </div>
+
+                            <!-- 3. Khách đại diện ký hợp đồng (Representative) -->
+                            <div class="col-md-6">
+                                <label for="representative" class="form-label fw-semibold">Khách đại diện (Ký HĐ) <span class="text-danger">*</span></label>
+                                <select class="form-select" id="representative" th:field="*{representative}" required>
+                                    <option value="" disabled selected>-- Chọn khách thuê đại diện --</option>
+                                    <option th:each="t : ${tenants}" 
+                                            th:value="${t.tenantId}" 
+                                            th:text="${t.fullName + ' - CCCD: ' + t.idNumber + ' (SĐT: ' + t.phone + ')'}">
+                                        Nguyễn Văn A
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- 4. Trạng thái hợp đồng -->
+                            <div class="col-md-6">
+                                <label for="status" class="form-label fw-semibold">Trạng thái HĐ</label>
+                                <select class="form-select" id="status" th:field="*{status}">
+                                    <option value="Hiệu lực">Hiệu lực</option>
+                                    <option value="Hết hạn">Hết hạn</option>
+                                    <option value="Đã hủy">Đã hủy</option>
+                                </select>
+                            </div>
+
+                            <!-- 5. Ngày bắt đầu & Ngày kết thúc -->
+                            <div class="col-md-6">
+                                <label for="startDate" class="form-label fw-semibold">Ngày bắt đầu thuê <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="startDate" th:field="*{startDate}" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="endDate" class="form-label fw-semibold">Ngày hết hạn HĐ <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="endDate" th:field="*{endDate}" required>
+                            </div>
+
+                            <!-- 6. Tiền đặt cọc -->
+                            <div class="col-md-6">
+                                <label for="depositAmount" class="form-label fw-semibold">Tiền đặt cọc (VNĐ)</label>
+                                <div class="input-group">
+                                    <input type="number" step="10000" min="0" class="form-control" 
+                                           id="depositAmount" th:field="*{depositAmount}" placeholder="Ví dụ: 3000000">
+                                    <span class="input-group-text">₫</span>
+                                </div>
+                            </div>
+
+                            <!-- 7. Kỳ thanh toán -->
+                            <div class="col-md-6">
+                                <label for="billingCycleMonths" class="form-label fw-semibold">Kỳ thanh toán (tháng/lần)</label>
+                                <input type="number" min="1" max="12" class="form-control" 
+                                       id="billingCycleMonths" th:field="*{billingCycleMonths}" placeholder="Ví dụ: 1">
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a th:href="@{/contracts}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-circle me-1"></i> Lưu hợp đồng
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

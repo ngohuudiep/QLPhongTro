@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${asset.roomAssetId != null ? 'Cập nhật tài sản' : 'Thêm tài sản mới'} + ' - Quản lý phòng trọ'">Tài sản</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h4 class="card-title mb-0 fw-bold text-primary">
+                        <i class="bi bi-box-seam me-2"></i>
+                        <span th:text="${asset.roomAssetId != null ? 'Chỉnh sửa thông tin tài sản' : 'Thêm tài sản vào phòng'}"></span>
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/assets/save}" th:object="${asset}" method="post">
+                        <input type="hidden" th:field="*{roomAssetId}" />
+
+                        <div class="row g-3">
+                            <!-- 1. Phòng trang bị tài sản -->
+                            <div class="col-md-6">
+                                <label for="room" class="form-label fw-semibold">Thuộc phòng <span class="text-danger">*</span></label>
+                                <select class="form-select" id="room" th:field="*{room}" required>
+                                    <option value="" disabled selected>-- Chọn phòng --</option>
+                                    <option th:each="r : ${rooms}" 
+                                            th:value="${r.roomId}" 
+                                            th:text="${r.roomCode + ' - ' + (r.building != null ? r.building.buildingName : '')}">
+                                        P.101
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- 2. Tên tài sản -->
+                            <div class="col-md-6">
+                                <label for="assetName" class="form-label fw-semibold">Tên tài sản <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="assetName" th:field="*{assetName}" 
+                                       placeholder="Ví dụ: Tủ lạnh, Máy giặt, Giường..." required maxlength="150">
+                            </div>
+
+                            <!-- 3. Số lượng -->
+                            <div class="col-md-4">
+                                <label for="quantity" class="form-label fw-semibold">Số lượng</label>
+                                <input type="number" class="form-control" id="quantity" th:field="*{quantity}" min="1" max="100">
+                            </div>
+
+                            <!-- 4. Tình trạng -->
+                            <div class="col-md-4">
+                                <label for="conditionStatus" class="form-label fw-semibold">Tình trạng</label>
+                                <select class="form-select" id="conditionStatus" th:field="*{conditionStatus}">
+                                    <option value="Mới 100%">Mới 100%</option>
+                                    <option value="Tốt">Tốt</option>
+                                    <option value="Bình thường">Bình thường</option>
+                                    <option value="Cần bảo trì">Cần bảo trì</option>
+                                    <option value="Hỏng">Hỏng</option>
+                                </select>
+                            </div>
+
+                            <!-- 5. Ngày mua/trang bị -->
+                            <div class="col-md-4">
+                                <label for="purchaseDate" class="form-label fw-semibold">Ngày mua / trang bị</label>
+                                <input type="date" class="form-control" id="purchaseDate" th:field="*{purchaseDate}">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a th:href="@{/assets}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Lưu tài sản
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
