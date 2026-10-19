@@ -1,0 +1,425 @@
+// ============================================================================
+// HỆ THỐNG QUẢN LÝ PHÒNG TRỌ (ApartmentDB)
+// MÃ NGUỒN DBML (Database Markup Language) DÀNH CHO DBDATAGRAM.IO
+// Copy toàn bộ nội dung file này và paste vào https://dbdiagram.io
+// ============================================================================
+
+// 1. Phân quyền
+Table vai_tro {
+  id int [pk, increment]
+  ten_vai_tro varchar(50) [not null, unique]
+  mo_ta varchar(255)
+}
+
+Table nguoi_dung {
+  id int [pk, increment]
+  vai_tro_id int [not null]
+  ho_ten varchar(100)
+  email varchar(100)
+  so_dien_thoai varchar(20)
+  ten_dang_nhap varchar(50) [not null, unique]
+  mat_khau varchar(255) [not null]
+  trang_thai varchar(20) [default: 'HOAT_DONG']
+  ngay_tao datetime
+}
+
+// 2. Khu trọ & Phòng
+Table khu_tro {
+  id int [pk, increment]
+  ten_khu_tro varchar(100) [not null]
+  dia_chi varchar(255) [not null]
+  phuong_xa varchar(100)
+  quan_huyen varchar(100)
+  tinh_thanh varchar(100)
+  mo_ta text
+  trang_thai varchar(20) [default: 'HOAT_DONG']
+}
+
+Table loai_phong {
+  id int [pk, increment]
+  ten_loai_phong varchar(100) [not null]
+  dien_tich decimal(8,2)
+  gia_tham_khao decimal(15,2)
+  mo_ta text
+}
+
+Table phong_tro {
+  id int [pk, increment]
+  khu_tro_id int [not null]
+  loai_phong_id int [not null]
+  ma_phong varchar(30) [not null]
+  tang int
+  dien_tich decimal(8,2)
+  gia_thue decimal(15,2) [not null]
+  tien_coc_mac_dinh decimal(15,2)
+  suc_chua int [default: 2]
+  trang_thai varchar(20) [default: 'TRONG']
+  mo_ta text
+}
+
+// 3. Người thuê & Hợp đồng
+Table nguoi_thue {
+  id int [pk, increment]
+  ho_ten varchar(100) [not null]
+  ngay_sinh date
+  gioi_tinh varchar(20)
+  so_dien_thoai varchar(20) [not null]
+  email varchar(100)
+  so_cccd varchar(20) [not null, unique]
+  dia_chi_thuong_tru varchar(255)
+  nghe_nghiep varchar(100)
+  ngay_tao datetime
+  ghi_chu text
+}
+
+Table hop_dong_thue {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  ma_hop_dong varchar(50) [not null, unique]
+  ngay_bat_dau date [not null]
+  ngay_ket_thuc date [not null]
+  ngay_ky date
+  gia_thue decimal(15,2) [not null]
+  tien_coc decimal(15,2) [not null]
+  ngay_thanh_toan_hang_thang int [default: 5]
+  dieu_khoan text
+  duong_dan_file varchar(255)
+  trang_thai varchar(20) [default: 'HIEU_LUC']
+  ghi_chu text
+}
+
+Table hop_dong_nguoi_thue {
+  id int [pk, increment]
+  hop_dong_id int [not null]
+  nguoi_thue_id int [not null]
+  vai_tro_trong_hop_dong varchar(30)
+  la_nguoi_dai_dien boolean [default: false]
+}
+
+Table lich_su_dieu_chinh_hop_dong {
+  id int [pk, increment]
+  hop_dong_id int [not null]
+  nguoi_dung_id int [not null]
+  noi_dung_thay_doi text [not null]
+  ngay_thay_doi datetime
+  gia_thue_cu decimal(15,2)
+  gia_thue_moi decimal(15,2)
+  ghi_chu text
+}
+
+// 4. Dịch vụ & Đo đếm điện nước
+Table dich_vu {
+  id int [pk, increment]
+  ten_dich_vu varchar(100) [not null]
+  don_vi_tinh varchar(30) [not null]
+  cach_tinh varchar(30) [not null]
+  don_gia_mac_dinh decimal(15,2) [not null]
+  mo_ta text
+  trang_thai varchar(20) [default: 'HOAT_DONG']
+}
+
+Table dich_vu_hop_dong {
+  id int [pk, increment]
+  hop_dong_id int [not null]
+  dich_vu_id int [not null]
+  don_gia decimal(15,2) [not null]
+  ngay_ap_dung date [not null]
+  ngay_ngung date
+  ghi_chu text
+}
+
+Table danh_muc_tien_nghi {
+  id int [pk, increment]
+  ten_tien_nghi varchar(100) [not null]
+  mo_ta varchar(255)
+}
+
+Table tien_nghi_phong {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  tien_nghi_id int [not null]
+  so_luong int [default: 1]
+  tinh_trang varchar(50)
+  ghi_chu text
+}
+
+Table cong_to {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  dich_vu_id int [not null]
+  ma_cong_to varchar(50) [not null]
+  ngay_lap_dat date
+  chi_so_ban_dau decimal(12,3) [default: 0]
+  trang_thai varchar(20) [default: 'HOAT_DONG']
+  ghi_chu text
+}
+
+Table chi_so_cong_to {
+  id int [pk, increment]
+  cong_to_id int [not null]
+  ngay_ghi datetime
+  chi_so decimal(12,3) [not null]
+  nguoi_ghi_id int
+  hinh_anh varchar(255)
+  ghi_chu text
+}
+
+// 5. Hóa đơn & Thanh toán
+Table hoa_don {
+  id int [pk, increment]
+  hop_dong_id int [not null]
+  ma_hoa_don varchar(50) [not null, unique]
+  thang int [not null]
+  nam int [not null]
+  ngay_phat_hanh date [not null]
+  han_thanh_toan date [not null]
+  tong_tien decimal(15,2) [not null]
+  so_tien_da_thanh_toan decimal(15,2) [default: 0]
+  trang_thai varchar(20) [default: 'CHUA_THANH_TOAN']
+  ghi_chu text
+}
+
+Table chi_tiet_hoa_don {
+  id int [pk, increment]
+  hoa_don_id int [not null]
+  dich_vu_id int
+  ten_khoan_thu varchar(100) [not null]
+  so_luong decimal(12,3) [default: 1]
+  don_vi_tinh varchar(30)
+  don_gia decimal(15,2) [not null]
+  thanh_tien decimal(15,2) [not null]
+  chi_so_cu decimal(12,3)
+  chi_so_moi decimal(12,3)
+  ghi_chu text
+}
+
+Table dieu_chinh_hoa_don {
+  id int [pk, increment]
+  hoa_don_id int [not null]
+  nguoi_dung_id int [not null]
+  so_tien_dieu_chinh decimal(15,2) [not null]
+  ly_do varchar(255) [not null]
+  ngay_dieu_chinh datetime
+}
+
+Table thanh_toan {
+  id int [pk, increment]
+  hop_dong_id int [not null]
+  ma_giao_dich varchar(100)
+  loai_thanh_toan varchar(30)
+  so_tien decimal(15,2) [not null]
+  ngay_thanh_toan datetime
+  phuong_thuc varchar(30) [not null]
+  ma_bien_nhan varchar(50)
+  duong_dan_bien_nhan varchar(255)
+  nguoi_nhan_id int
+  trang_thai varchar(20) [default: 'HOAN_THANH']
+  ghi_chu text
+}
+
+Table phan_bo_thanh_toan {
+  id int [pk, increment]
+  thanh_toan_id int [not null]
+  hoa_don_id int [not null]
+  so_tien_phan_bo decimal(15,2) [not null]
+  ghi_chu text
+}
+
+// 6. Chi phí & Sửa chữa
+Table nha_cung_cap {
+  id int [pk, increment]
+  ten_nha_cung_cap varchar(150) [not null]
+  so_dien_thoai varchar(20)
+  email varchar(100)
+  dia_chi varchar(255)
+  ma_so_thue varchar(30)
+  ghi_chu text
+}
+
+Table chi_phi {
+  id int [pk, increment]
+  khu_tro_id int
+  phong_tro_id int
+  nha_cung_cap_id int
+  nguoi_tao_id int [not null]
+  loai_chi_phi varchar(100) [not null]
+  noi_dung varchar(255) [not null]
+  so_tien decimal(15,2) [not null]
+  ngay_chi date [not null]
+  duong_dan_hoa_don varchar(255)
+  ghi_chu text
+}
+
+Table yeu_cau_sua_chua {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  nguoi_tao_id int [not null]
+  nguoi_phu_trach_id int
+  tieu_de varchar(150) [not null]
+  mo_ta text
+  muc_do_uu_tien varchar(20) [default: 'TRUNG_BINH']
+  ngay_yeu_cau datetime
+  ngay_bat_dau datetime
+  ngay_hoan_thanh datetime
+  chi_phi_du_kien decimal(15,2)
+  chi_phi_thuc_te decimal(15,2)
+  trang_thai varchar(20) [default: 'TIEP_NHAN']
+  ket_qua_xu_ly text
+}
+
+Table vat_tu_sua_chua {
+  id int [pk, increment]
+  yeu_cau_sua_chua_id int [not null]
+  ten_vat_tu varchar(100) [not null]
+  so_luong decimal(12,2) [not null]
+  don_vi_tinh varchar(30)
+  don_gia decimal(15,2) [not null]
+  thanh_tien decimal(15,2) [not null]
+  ghi_chu text
+}
+
+// 7. Tài sản & Kiểm tra phòng
+Table tai_san_phong {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  ten_tai_san varchar(100) [not null]
+  loai_tai_san varchar(100)
+  so_luong int [default: 1]
+  gia_tri decimal(15,2)
+  ngay_mua date
+  tinh_trang varchar(50)
+  ma_tai_san varchar(50)
+  ghi_chu text
+}
+
+Table bien_ban_ban_giao_tai_san {
+  id int [pk, increment]
+  hop_dong_id int [not null]
+  nguoi_lap_id int [not null]
+  loai_bien_ban varchar(30) [not null]
+  ngay_ban_giao datetime
+  noi_dung text
+  duong_dan_file varchar(255)
+}
+
+Table kiem_tra_phong {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  hop_dong_id int
+  nguoi_kiem_tra_id int [not null]
+  ngay_kiem_tra datetime
+  loai_kiem_tra varchar(30) [not null]
+  ket_luan text
+  duong_dan_hinh_anh varchar(255)
+}
+
+Table chi_tiet_kiem_tra_phong {
+  id int [pk, increment]
+  kiem_tra_phong_id int [not null]
+  tai_san_phong_id int
+  ten_hang_muc varchar(100) [not null]
+  tinh_trang_truoc varchar(100)
+  tinh_trang_sau varchar(100)
+  chi_phi_khac_phuc decimal(15,2)
+  ghi_chu text
+}
+
+// 8. Hệ thống
+Table thong_bao {
+  id int [pk, increment]
+  nguoi_dung_id int [not null]
+  tieu_de varchar(150) [not null]
+  noi_dung text [not null]
+  loai_thong_bao varchar(30)
+  ngay_tao datetime
+  ngay_doc datetime
+  trang_thai varchar(20) [default: 'CHUA_DOC']
+}
+
+Table nhat_ky_he_thong {
+  id int [pk, increment]
+  nguoi_dung_id int
+  hanh_dong varchar(100) [not null]
+  bang_du_lieu varchar(100)
+  id_ban_ghi int
+  noi_dung text
+  dia_chi_ip varchar(45)
+  thoi_gian datetime
+}
+
+Table dat_phong {
+  id int [pk, increment]
+  phong_tro_id int [not null]
+  nguoi_thue_id int
+  ho_ten_nguoi_dat varchar(100) [not null]
+  so_dien_thoai varchar(20) [not null]
+  ngay_dat datetime
+  ngay_du_kien_nhan_phong date [not null]
+  tien_dat_coc decimal(15,2) [default: 0]
+  trang_thai varchar(20) [default: 'CHO_DUYET']
+  ghi_chu text
+}
+
+// ============================================================================
+// CÁC QUAN HỆ KHÓA NGOẠI (RELATIONSHIPS)
+// ============================================================================
+
+Ref: nguoi_dung.vai_tro_id > vai_tro.id
+
+Ref: phong_tro.khu_tro_id > khu_tro.id
+Ref: phong_tro.loai_phong_id > loai_phong.id
+
+Ref: hop_dong_thue.phong_tro_id > phong_tro.id
+Ref: hop_dong_nguoi_thue.hop_dong_id > hop_dong_thue.id
+Ref: hop_dong_nguoi_thue.nguoi_thue_id > nguoi_thue.id
+
+Ref: lich_su_dieu_chinh_hop_dong.hop_dong_id > hop_dong_thue.id
+Ref: lich_su_dieu_chinh_hop_dong.nguoi_dung_id > nguoi_dung.id
+
+Ref: dich_vu_hop_dong.hop_dong_id > hop_dong_thue.id
+Ref: dich_vu_hop_dong.dich_vu_id > dich_vu.id
+
+Ref: tien_nghi_phong.phong_tro_id > phong_tro.id
+Ref: tien_nghi_phong.tien_nghi_id > danh_muc_tien_nghi.id
+
+Ref: cong_to.phong_tro_id > phong_tro.id
+Ref: cong_to.dich_vu_id > dich_vu.id
+Ref: chi_so_cong_to.cong_to_id > cong_to.id
+Ref: chi_so_cong_to.nguoi_ghi_id > nguoi_dung.id
+
+Ref: hoa_don.hop_dong_id > hop_dong_thue.id
+Ref: chi_tiet_hoa_don.hoa_don_id > hoa_don.id
+Ref: chi_tiet_hoa_don.dich_vu_id > dich_vu.id
+Ref: dieu_chinh_hoa_don.hoa_don_id > hoa_don.id
+Ref: dieu_chinh_hoa_don.nguoi_dung_id > nguoi_dung.id
+
+Ref: thanh_toan.hop_dong_id > hop_dong_thue.id
+Ref: thanh_toan.nguoi_nhan_id > nguoi_dung.id
+Ref: phan_bo_thanh_toan.thanh_toan_id > thanh_toan.id
+Ref: phan_bo_thanh_toan.hoa_don_id > hoa_don.id
+
+Ref: chi_phi.khu_tro_id > khu_tro.id
+Ref: chi_phi.phong_tro_id > phong_tro.id
+Ref: chi_phi.nha_cung_cap_id > nha_cung_cap.id
+Ref: chi_phi.nguoi_tao_id > nguoi_dung.id
+
+Ref: yeu_cau_sua_chua.phong_tro_id > phong_tro.id
+Ref: yeu_cau_sua_chua.nguoi_tao_id > nguoi_dung.id
+Ref: yeu_cau_sua_chua.nguoi_phu_trach_id > nguoi_dung.id
+Ref: vat_tu_sua_chua.yeu_cau_sua_chua_id > yeu_cau_sua_chua.id
+
+Ref: tai_san_phong.phong_tro_id > phong_tro.id
+Ref: bien_ban_ban_giao_tai_san.hop_dong_id > hop_dong_thue.id
+Ref: bien_ban_ban_giao_tai_san.nguoi_lap_id > nguoi_dung.id
+
+Ref: kiem_tra_phong.phong_tro_id > phong_tro.id
+Ref: kiem_tra_phong.hop_dong_id > hop_dong_thue.id
+Ref: kiem_tra_phong.nguoi_kiem_tra_id > nguoi_dung.id
+Ref: chi_tiet_kiem_tra_phong.kiem_tra_phong_id > kiem_tra_phong.id
+Ref: chi_tiet_kiem_tra_phong.tai_san_phong_id > tai_san_phong.id
+
+Ref: thong_bao.nguoi_dung_id > nguoi_dung.id
+Ref: nhat_ky_he_thong.nguoi_dung_id > nguoi_dung.id
+
+Ref: dat_phong.phong_tro_id > phong_tro.id
+Ref: dat_phong.nguoi_thue_id > nguoi_thue.id
