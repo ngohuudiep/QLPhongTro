@@ -3,11 +3,11 @@ package com.qlphongtro.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 /**
  * Entity ánh xạ bảng Users trong SQL Server.
- * Lưu tài khoản đăng nhập của người dùng hệ thống.
- * Quan hệ N-1 với Role (nhiều User cùng một Role).
+ * Quản lý tài khoản đăng nhập (Chủ trọ / Người thuê / Nhân viên).
  */
 @Entity
 @Table(name = "Users")
@@ -18,37 +18,61 @@ public class User {
     @Column(name = "user_id")
     private Integer userId;
 
-    /** Tên đăng nhập - phải là duy nhất trong hệ thống */
+    /** Tên đăng nhập (username) */
     @NotBlank(message = "Tên đăng nhập không được để trống")
     @Size(max = 50, message = "Tên đăng nhập tối đa 50 ký tự")
     @Column(name = "username", nullable = false, unique = true, length = 50)
     private String username;
 
-    /** Mật khẩu đã được mã hóa BCrypt trước khi lưu vào DB */
+    /** Mật khẩu đã băm BCrypt */
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
-    /** Họ và tên hiển thị của người dùng */
+    /** Họ và tên hiển thị (Hỗ trợ tiếng Việt Unicode) */
     @Size(max = 150, message = "Họ và tên tối đa 150 ký tự")
-    @Column(name = "full_name", length = 150)
+    @Column(name = "full_name", columnDefinition = "NVARCHAR(150)")
     private String fullName;
 
-    /**
-     * Vai trò của người dùng - quan hệ N-1 với bảng Roles.
-     * Nhiều người dùng có thể có cùng một role.
-     */
+    /** Email liên hệ & đăng nhập */
+    @Column(name = "email", length = 100, unique = true)
+    private String email;
+
+    /** Số điện thoại liên hệ & đăng nhập */
+    @Column(name = "phone", length = 20, unique = true)
+    private String phone;
+
+    /** Số lần đăng nhập sai liên tiếp để rate limit / lockout */
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
+
+    /** Thời gian mở khóa nếu bị tạm khóa do đăng nhập sai nhiều lần */
+    @Column(name = "lockout_until")
+    private LocalDateTime lockoutUntil;
+
+    /** Mã OTP khôi phục mật khẩu */
+    @Column(name = "reset_otp", length = 10)
+    private String resetOtp;
+
+    /** Thời gian hết hạn của OTP */
+    @Column(name = "reset_otp_expiry")
+    private LocalDateTime resetOtpExpiry;
+
+    /** Vai trò người dùng (ADMIN: Chủ trọ, USER: Người thuê, STAFF: Nhân viên) */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
     public User() {}
 
-    public User(Integer userId, String username, String password, String fullName, Role role) {
+    public User(Integer userId, String username, String password, String fullName, String email, String phone, Role role) {
         this.userId = userId;
         this.username = username;
         this.password = password;
         this.fullName = fullName;
+        this.email = email;
+        this.phone = phone;
         this.role = role;
+        this.failedLoginAttempts = 0;
     }
 
     // ==================== Getters & Setters ====================
@@ -65,11 +89,34 @@ public class User {
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
 
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public Integer getFailedLoginAttempts() { return failedLoginAttempts != null ? failedLoginAttempts : 0; }
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) { this.failedLoginAttempts = failedLoginAttempts; }
+
+    public LocalDateTime getLockoutUntil() { return lockoutUntil; }
+    public void setLockoutUntil(LocalDateTime lockoutUntil) { this.lockoutUntil = lockoutUntil; }
+
+    public String getResetOtp() { return resetOtp; }
+    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
+
+    public LocalDateTime getResetOtpExpiry() { return resetOtpExpiry; }
+    public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) { this.resetOtpExpiry = resetOtpExpiry; }
+
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 
+    public boolean isAccountLocked() {
+        if (lockoutUntil == null) return false;
+        return lockoutUntil.isAfter(LocalDateTime.now());
+    }
+
     @Override
     public String toString() {
-        return "User{userId=" + userId + ", username='" + username + "', fullName='" + fullName + "'}";
+        return "User{userId=" + userId + ", username='" + username + "', fullName='" + fullName + "', email='" + email + "'}";
     }
 }

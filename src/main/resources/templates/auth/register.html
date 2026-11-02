@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký tài khoản – QLPhongTro</title>
+    <!-- Fonts & Bootstrap 5 với subset=vietnamese -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&subset=vietnamese&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <style>
+        .role-card-option {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .form-check-input:checked + .role-card-option {
+            border-color: var(--teal-600);
+            background-color: var(--teal-50);
+        }
+        [data-bs-theme="dark"] .form-check-input:checked + .role-card-option {
+            background-color: rgba(20, 184, 166, 0.15);
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- Navbar Fragment -->
+    <div th:replace="~{layout/navbar :: navbar}"></div>
+
+    <main class="d-flex align-items-center justify-content-center py-5 flex-grow-1">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-9 col-lg-7 col-xl-6">
+                    
+                    <!-- Register Card -->
+                    <div class="card-modern p-4 p-sm-5">
+                        <div class="text-center mb-4">
+                            <div class="brand-icon mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
+                                <i class="bi bi-person-plus"></i>
+                            </div>
+                            <h3 class="fw-bold mb-1">Đăng ký tài khoản</h3>
+                            <p class="text-muted small">Tạo tài khoản mới để trải nghiệm hệ thống quản lý phòng trọ</p>
+                        </div>
+
+                        <!-- Alerts -->
+                        <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center py-2 px-3 mb-4 rounded-3" role="alert">
+                            <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+                            <div class="small fw-medium" th:text="${errorMessage}"></div>
+                        </div>
+
+                        <!-- Form -->
+                        <form th:action="@{/register}" th:object="${registerRequest}" method="post" id="registerForm">
+                            
+                            <!-- Role Choice (Chủ trọ / Người thuê) -->
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold small mb-2">Bạn tham gia với vai trò gì?</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="d-block">
+                                            <input type="radio" class="form-check-input d-none" th:field="*{roleChoice}" value="USER" checked>
+                                            <div class="role-card-option text-center">
+                                                <i class="bi bi-person-check fs-4 text-primary d-block mb-1"></i>
+                                                <span class="fw-bold d-block small">Người thuê</span>
+                                                <span class="text-muted" style="font-size: 0.75rem;">Tìm & xem phòng trọ</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="d-block">
+                                            <input type="radio" class="form-check-input d-none" th:field="*{roleChoice}" value="ADMIN">
+                                            <div class="role-card-option text-center">
+                                                <i class="bi bi-building fs-4 text-primary d-block mb-1"></i>
+                                                <span class="fw-bold d-block small">Chủ trọ (Quản lý)</span>
+                                                <span class="text-muted" style="font-size: 0.75rem;">Đăng & quản lý phòng</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('roleChoice')}" th:errors="*{roleChoice}"></div>
+                            </div>
+
+                            <div class="row g-3">
+                                <!-- Họ và tên -->
+                                <div class="col-12">
+                                    <label for="fullName" class="form-label fw-semibold small">Họ và tên <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                        <input type="text" class="form-control" th:field="*{fullName}" id="fullName" placeholder="Ví dụ: Nguyễn Văn An" required>
+                                    </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                                </div>
+
+                                <!-- Username -->
+                                <div class="col-md-6">
+                                    <label for="username" class="form-label fw-semibold small">Tên đăng nhập <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                        <input type="text" class="form-control" th:field="*{username}" id="username" placeholder="nguyenvanan" required>
+                                    </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                                </div>
+
+                                <!-- Phone -->
+                                <div class="col-md-6">
+                                    <label for="phone" class="form-label fw-semibold small">Số điện thoại <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                        <input type="tel" class="form-control" th:field="*{phone}" id="phone" placeholder="0901234567" required>
+                                    </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="col-12">
+                                    <label for="email" class="form-label fw-semibold small">Địa chỉ Email <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                        <input type="email" class="form-control" th:field="*{email}" id="email" placeholder="an.nguyen@example.com" required>
+                                    </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                                </div>
+
+                                <!-- Password -->
+                                <div class="col-md-6">
+                                    <label for="regPassword" class="form-label fw-semibold small">Mật khẩu <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                        <input type="password" class="form-control" th:field="*{password}" id="regPassword" placeholder="Tối thiểu 8 ký tự" required oninput="checkPasswordStrength(this.value, 'passStrengthFill', 'passStrengthLabel')">
+                                        <button class="btn btn-outline-secondary border" type="button" onclick="togglePasswordVisibility('regPassword', this)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Password Strength Meter -->
+                                    <div class="password-meter-bar">
+                                        <div id="passStrengthFill" class="password-meter-fill"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <span class="text-muted" style="font-size: 0.72rem;">Có chữ & số, từ 8 ký tự</span>
+                                        <span id="passStrengthLabel" class="fw-bold" style="font-size: 0.72rem;"></span>
+                                    </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                                </div>
+
+                                <!-- Confirm Password -->
+                                <div class="col-md-6">
+                                    <label for="confirmPassword" class="form-label fw-semibold small">Nhập lại mật khẩu <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                        <input type="password" class="form-control" th:field="*{confirmPassword}" id="confirmPassword" placeholder="Nhập lại mật khẩu" required>
+                                        <button class="btn btn-outline-secondary border" type="button" onclick="togglePasswordVisibility('confirmPassword', this)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                                </div>
+                            </div>
+
+                            <!-- Terms -->
+                            <div class="form-check mt-3 mb-4">
+                                <input class="form-check-input" type="checkbox" id="termsCheck" required checked>
+                                <label class="form-check-label small text-muted user-select-none" for="termsCheck">
+                                    Tôi đồng ý với <a href="#" class="text-primary text-decoration-none">Điều khoản dịch vụ</a> và <a href="#" class="text-primary text-decoration-none">Chính sách bảo mật</a>
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary w-100 py-2 mb-3">
+                                <i class="bi bi-check-lg"></i> Hoàn tất đăng ký
+                            </button>
+
+                            <div class="text-center small text-muted">
+                                Đã có tài khoản?
+                                <a th:href="@{/login}" class="text-primary fw-bold text-decoration-none">Đăng nhập ngay</a>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{layout/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const pass = document.getElementById('regPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            if (pass !== confirmPass) {
+                e.preventDefault();
+                showToast('Mật khẩu và xác nhận mật khẩu không khớp!', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

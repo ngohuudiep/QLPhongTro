@@ -13,16 +13,16 @@
 ## MỤC LỤC BÁO CÁO
 
 1. **PHẦN I: TỔNG QUAN ĐỀ TÀI & PHẠM VI NGHIỆP VỤ**
-2. **PHẦN II: BƯỚC 1 - PHÂN TÍCH YÊU CẦU (REQUIREMENT ANALYSIS - 40%)**
-   - 2.1. Xác định Tác nhân (Actors) & Ma trận Phân quyền RBAC (10%)
-   - 2.2. Danh mục Use Case & User Stories chuẩn hóa Agile (15%)
-   - 2.3. Mô hình hóa Luồng nghiệp vụ cốt lõi & Xử lý Edge Cases (15%)
-3. **PHẦN III: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD (DATABASE DESIGN - 60%)**
+2. **PHẦN II: BƯỚC 1 - PHÂN TÍCH YÊU CẦU (REQUIREMENT ANALYSIS)**
+   - 2.1. Xác định Tác nhân (Actors) & Ma trận Phân quyền RBAC
+   - 2.2. Danh mục Use Case & User Stories chuẩn hóa Agile
+   - 2.3. Mô hình hóa Luồng nghiệp vụ cốt lõi & Xử lý Edge Cases
+3. **PHẦN III: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD (DATABASE DESIGN)**
    - 3.1. Phân tích Tinh gọn Kiến trúc CSDL & Xử lý Dư thừa (Đánh giá chuyên sâu)
-   - 3.2. Danh mục Thực thể, Thuộc tính & Từ điển dữ liệu chuẩn (20%)
-   - 3.3. Thiết kế Ràng buộc Khóa (PK, FK) & Toàn vẹn dữ liệu (15%)
-   - 3.4. Mô hình Quan hệ Thực thể & Triệt tiêu Quan hệ Nhiều - Nhiều (N-N) (15%)
-   - 3.5. Biện luận & Chứng minh Mức độ Chuẩn hóa (1NF - 2NF - 3NF) (10%)
+   - 3.2. Danh mục Thực thể, Thuộc tính & Từ điển dữ liệu chuẩn
+   - 3.3. Thiết kế Ràng buộc Khóa (PK, FK) & Toàn vẹn dữ liệu
+   - 3.4. Mô hình Quan hệ Thực thể & Triệt tiêu Quan hệ Nhiều - Nhiều (N-N)
+   - 3.5. Biện luận & Chứng minh Mức độ Chuẩn hóa (1NF - 2NF - 3NF)
 4. **PHẦN IV: ĐÁNH GIÁ KHẢ NĂNG MỞ RỘNG (SCALABILITY) & KẾT LUẬN**
 
 ---
@@ -39,9 +39,9 @@ Hệ thống **QLPhongTro** được thiết kế toàn diện nhằm quản lý
 
 ---
 
-## PHẦN II: BƯỚC 1 - PHÂN TÍCH YÊU CẦU NGHIỆP VỤ (REQUIREMENT ANALYSIS - 40%)
+## PHẦN II: BƯỚC 1 - PHÂN TÍCH YÊU CẦU NGHIỆP VỤ (REQUIREMENT ANALYSIS)
 
-### 2.1. Xác định Tác nhân (Actors) & Ma trận Phân quyền RBAC (10%)
+### 2.1. Xác định Tác nhân (Actors) & Ma trận Phân quyền RBAC
 
 Hệ thống phân định rõ **04 tác nhân**, ánh xạ trực tiếp với bảng `vai_tro` và `nguoi_dung`:
 
@@ -109,7 +109,7 @@ Hệ thống phân định rõ **04 tác nhân**, ánh xạ trực tiếp với 
 
 ---
 
-### 2.2. Danh mục Use Case & User Story chuẩn hóa Agile (15%)
+### 2.2. Danh mục Use Case & User Story chuẩn hóa Agile
 
 Quy chuẩn định danh chức năng: **Động từ + Danh từ**.
 
@@ -160,7 +160,7 @@ flowchart LR
 
 ---
 
-### 2.3. Mô hình hóa Luồng nghiệp vụ cốt lõi & Xử lý Edge Cases (15%)
+### 2.3. Mô hình hóa Luồng nghiệp vụ cốt lõi & Xử lý Edge Cases
 
 #### Luồng 1: Đặt phòng trực tuyến $\rightarrow$ Duyệt $\rightarrow$ Lập Hợp đồng & Bàn giao tài sản
 
@@ -220,7 +220,7 @@ flowchart TD
 
 ---
 
-## PHẦN III: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD (DATABASE DESIGN - 60%)
+## PHẦN III: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD (DATABASE DESIGN)
 
 ### 3.1. Phân tích Tinh gọn Kiến trúc CSDL & Đánh giá Dư thừa
 
@@ -240,7 +240,7 @@ Qua rà soát sơ đồ 31 bảng từ thiết kế của bạn, nhóm phân tí
 
 ---
 
-### 3.2. Danh mục Thực thể, Thuộc tính & Từ điển Dữ liệu (Data Dictionary - 20%)
+### 3.2. Danh mục Thực thể, Thuộc tính & Từ điển Dữ liệu (Data Dictionary)
 
 Dưới đây là từ điển dữ liệu chuẩn cho các thực thể quan trọng nhất trong hệ thống:
 
@@ -315,7 +315,7 @@ Dưới đây là từ điển dữ liệu chuẩn cho các thực thể quan tr
 
 ---
 
-### 3.3. Thiết kế Ràng buộc Khóa (PK & FK) & Toàn vẹn Tham chiếu (15%)
+### 3.3. Thiết kế Ràng buộc Khóa (PK & FK) & Toàn vẹn Tham chiếu
 
 - **100% các bảng đều có Khóa chính:** Đặt kiểu số nguyên tự tăng `INT IDENTITY(1,1)` làm Surrogate Key giúp tối ưu cấu trúc B-Tree Index và tốc độ truy vấn `JOIN`.
 - **Ràng buộc Khóa ngoại (FK) chống dữ liệu mồ côi:**
@@ -327,7 +327,7 @@ Dưới đây là từ điển dữ liệu chuẩn cho các thực thể quan tr
 
 ---
 
-### 3.4. Mô hình Quan hệ Thực thể & Triệt tiêu Quan hệ Nhiều-Nhiều (15%)
+### 3.4. Mô hình Quan hệ Thực thể & Triệt tiêu Quan hệ Nhiều-Nhiều
 
 Sơ đồ đã xử lý triệt để các quan hệ Nhiều - Nhiều cốt lõi bằng các bảng trung gian chuyên biệt:
 1. **`hop_dong_thue` N - N `nguoi_thue`**: Giải quyết qua bảng trung gian **`hop_dong_nguoi_thue`** (lưu cờ đại diện, vai trò cư trú).
@@ -379,7 +379,7 @@ erDiagram
 
 ---
 
-### 3.5. Biện luận & Chứng minh Mức độ Chuẩn hóa (1NF - 2NF - 3NF) (10%)
+### 3.5. Biện luận & Chứng minh Mức độ Chuẩn hóa (1NF - 2NF - 3NF)
 
 1. **Đạt Chuẩn 1NF (First Normal Form):**
    - 100% các cột đều chứa giá trị nguyên tố (Atomic values).
@@ -404,5 +404,6 @@ erDiagram
    - Cơ chế công tơ (`cong_to`) tách rời giúp hỗ trợ không giới hạn loại hình đo đếm (Điện sinh hoạt, Điện 3 pha kinh doanh, Nước máy, Nước giếng).
 
 2. **Kết luận nghiệm thu:**
-   - **Bước 1 (40%)**: Đáp ứng hoàn hảo các yêu cầu phân tích tác nhân, chuẩn hóa danh mục Use Case động từ + danh từ, User Stories chi tiết, mô hình hóa luồng nghiệp vụ và phân tích các trường hợp ngoại lệ.
-   - **Bước 2 (60%)**: Thiết kế cơ sở dữ liệu hoàn chỉnh, chuẩn hóa 3NF, xử lý triệt để quan hệ Nhiều-Nhiều, ràng buộc toàn vẹn khóa chặt chẽ và có biện luận tối ưu hóa loại bỏ dư thừa logic.
+   - **Bước 1 (Phân tích yêu cầu)**: Đáp ứng hoàn hảo các yêu cầu phân tích tác nhân, chuẩn hóa danh mục Use Case động từ + danh từ, User Stories chi tiết, mô hình hóa luồng nghiệp vụ và phân tích các trường hợp ngoại lệ.
+   - **Bước 2 (Thiết kế CSDL & ERD)**: Thiết kế cơ sở dữ liệu hoàn chỉnh, chuẩn hóa 3NF, xử lý triệt để quan hệ Nhiều-Nhiều, ràng buộc toàn vẹn khóa chặt chẽ và có biện luận tối ưu hóa loại bỏ dư thừa logic.
+

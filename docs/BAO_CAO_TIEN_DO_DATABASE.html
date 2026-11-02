@@ -277,7 +277,7 @@
           </tr>
           <tr>
             <td><strong>Phạm vi báo cáo:</strong></td>
-            <td>Bước 1: Phân tích Yêu cầu (40%) & Bước 2: Thiết kế CSDL (60%)</td>
+            <td>Bước 1: Phân tích Yêu cầu & Bước 2: Thiết kế CSDL</td>
             <td><strong>Quy chuẩn CSDL:</strong></td>
             <td>31 Bảng Chuẩn hóa Tiếng Việt (1NF - 2NF - 3NF)</td>
           </tr>
@@ -289,17 +289,17 @@
     <div class="callout callout-success">
       <strong>TỔNG QUAN TIẾN ĐỘ THỰC HIỆN:</strong>
       <ol style="margin-top: 6px; margin-bottom: 0;">
-        <li><strong>Bước 1 - Phân tích yêu cầu (40%):</strong> Xác định 04 Tác nhân (Actors) & Ma trận RBAC; Phủ kín toàn bộ 31 bảng CSDL; Danh mục Use Case & User Story chuẩn Agile; Mô hình hóa 02 Business Flow phức tạp kèm xử lý Edge Cases.</li>
-        <li><strong>Bước 2 - Thiết kế CSDL (60%):</strong> Xây dựng hệ thống 31 Bảng tiếng Việt hoàn chỉnh; 100% Khóa chính (PK), Khóa ngoại (FK) chống dữ liệu mồ côi; Triệt tiêu quan hệ Nhiều-Nhiều (N-N) bằng các bảng trung gian chuyên biệt; Chứng minh đạt Chuẩn hóa 3NF.</li>
+        <li><strong>Bước 1 - Phân tích yêu cầu:</strong> Xác định 04 Tác nhân (Actors) & Ma trận RBAC; Phủ kín toàn bộ 31 bảng CSDL; Danh mục Use Case & User Story chuẩn Agile; Mô hình hóa 02 Business Flow phức tạp kèm xử lý Edge Cases.</li>
+        <li><strong>Bước 2 - Thiết kế CSDL:</strong> Xây dựng hệ thống 31 Bảng tiếng Việt hoàn chỉnh; 100% Khóa chính (PK), Khóa ngoại (FK) chống dữ liệu mồ côi; Triệt tiêu quan hệ Nhiều-Nhiều (N-N) bằng các bảng trung gian chuyên biệt; Chứng minh đạt Chuẩn hóa 3NF.</li>
       </ol>
     </div>
 
     <!-- ================================================================= -->
-    <!-- PHẦN I: BƯỚC 1 - PHÂN TÍCH YÊU CẦU NGHIỆP VỤ (40%) -->
+    <!-- PHẦN I: BƯỚC 1 - PHÂN TÍCH YÊU CẦU NGHIỆP VỤ -->
     <!-- ================================================================= -->
-    <h2 class="section-title">PHẦN I: BƯỚC 1 - PHÂN TÍCH YÊU CẦU NGHIỆP VỤ (40%)</h2>
+    <h2 class="section-title">PHẦN I: BƯỚC 1 - PHÂN TÍCH YÊU CẦU NGHIỆP VỤ</h2>
 
-    <h3 class="sub-section-title">1.1. Xác định Tác nhân (Actors) & Phân định Phạm vi Quyền hạn (10%)</h3>
+    <h3 class="sub-section-title">1.1. Xác định Tác nhân (Actors) & Phân định Phạm vi Quyền hạn</h3>
     <p>
       Hệ thống phân định nghiêm ngặt <strong>04 tác nhân chính</strong>, đảm bảo nguyên tắc đặc quyền tối thiểu (Least Privilege) và phân tách trách nhiệm (Separation of Concerns):
     </p>
@@ -394,7 +394,7 @@
 
     <div class="page-break"></div>
 
-    <h3 class="sub-section-title">1.2. Danh mục Use Case & User Story chuẩn hóa (15%)</h3>
+    <h3 class="sub-section-title">1.2. Danh mục Use Case & User Story chuẩn hóa</h3>
     <p>
       Quy chuẩn đặt tên chức năng tuân thủ cấu trúc: <strong>Động từ (Verb) + Danh từ (Noun)</strong>, phản ánh đúng bản chất hành vi người dùng trong hệ thống:
     </p>
@@ -504,14 +504,14 @@ flowchart LR
 
     <div class="page-break"></div>
 
-    <h3 class="sub-section-title">1.3. Mô hình hóa Luồng nghiệp vụ cốt lõi & Xử lý Edge Cases (15%)</h3>
+    <h3 class="sub-section-title">1.3. Mô hình hóa Luồng nghiệp vụ cốt lõi & Xử lý Edge Cases</h3>
 
-    <h4>Luồng nghiệp vụ 1: Đặt phòng trực tuyến $\rightarrow$ Duyệt $\rightarrow$ Lập Hợp đồng & Bàn giao tài sản</h4>
+    <h4>Luồng nghiệp vụ 1: Đặt phòng trực tuyến &rarr; Duyệt &rarr; Lập Hợp đồng & Bàn giao tài sản</h4>
     <div class="diagram-box">
       <div class="mermaid">
 flowchart TD
     Start([Khách chọn phòng trọ]) --> CheckRoom{Phòng có trạng thái TRONG?}
-    CheckRoom -- Không --> AlertFull[Báo phòng đã kín hoặc bảo trì] --> EndFail([Kết thúc])
+    CheckRoom -- Không --> AlertBusy[Báo phòng đã kín hoặc bảo trì] --> EndFail([Kết thúc])
     CheckRoom -- Có --> CheckAuth{Đã đăng nhập?}
     
     CheckAuth -- Chưa --> ReqLogin[Yêu cầu Đăng ký / Đăng nhập] --> SubmitReq
@@ -542,16 +542,16 @@ flowchart TD
       </ul>
     </div>
 
-    <h4>Luồng nghiệp vụ 2: Chốt chỉ số công tơ $\rightarrow$ Xuất hóa đơn $\rightarrow$ Thu tiền & Phân bổ gạch nợ</h4>
+    <h4>Luồng nghiệp vụ 2: Chốt chỉ số công tơ &rarr; Xuất hóa đơn &rarr; Thu tiền & Phân bổ gạch nợ</h4>
     <div class="diagram-box">
       <div class="mermaid">
 flowchart TD
     StartBill([Đến kỳ chốt cước cuối tháng]) --> ReadIndex[Nhân viên đọc chỉ số công tơ thực tế]
     ReadIndex --> InputSys[Nhập chỉ số mới vào chi_so_cong_to]
     
-    InputSys --> CheckIndex{Chỉ số mới >= Chỉ số cũ?}
-    CheckIndex -- Sai số âm --> AlertIndex[Cảnh báo: Chỉ số bất thường hoặc nhập nhầm] --> Recheck[Kiểm tra lại công tơ thực tế] --> InputSys
-    CheckIndex -- Hợp lệ --> CalcUse[Tính mức tiêu thụ = Chỉ số mới - Chỉ số cũ]
+    InputSys --> CheckIndex{Chỉ số mới hợp lệ?}
+    CheckIndex -- Sai số âm: Mới nhỏ hơn Cũ --> AlertIndex[Cảnh báo: Chỉ số bất thường hoặc nhập nhầm] --> Recheck[Kiểm tra lại công tơ thực tế] --> InputSys
+    CheckIndex -- Hợp lệ: Mới lớn hơn bằng Cũ --> CalcUse[Tính mức tiêu thụ = Chỉ số mới - Chỉ số cũ]
     
     CalcUse --> SaveMeter[Lưu dữ liệu vào chi_so_cong_to]
     SaveMeter --> GenInvoice[Hệ thống tự động phát sinh hoa_don và chi_tiet_hoa_don]
@@ -564,7 +564,7 @@ flowchart TD
     TenantPay --> RecordPay[Tạo bản ghi thanh_toan: số tiền, phương thức, mã GD]
     RecordPay --> AllocPay[Tạo bản ghi phan_bo_thanh_toan gắn với hoa_don_id]
     
-    AllocPay --> PayCheck{Tổng tiền đã nộp >= tong_tien?}
+    AllocPay --> PayCheck{Đã nộp đủ tiền hóa đơn?}
     PayCheck -- Thiếu --> RecordPart[Cập nhật hóa đơn: THANH_TOAN_MOT_PHAN] --> WaitMore([Chờ thu phần còn lại])
     PayCheck -- Đủ --> RecordFull[Cập nhật hóa đơn: DA_THANH_TOAN] --> FinishBill([Gạch nợ hoàn tất])
       </div>
@@ -582,11 +582,11 @@ flowchart TD
     <div class="page-break"></div>
 
     <!-- ================================================================= -->
-    <!-- PHẦN II: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD (60%) -->
+    <!-- PHẦN II: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD -->
     <!-- ================================================================= -->
-    <h2 class="section-title">PHẦN II: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD (60%)</h2>
+    <h2 class="section-title">PHẦN II: BƯỚC 2 - THIẾT KẾ CƠ SỞ DỮ LIỆU & ERD</h2>
 
-    <h3 class="sub-section-title">2.1. Thực thể & Từ điển Dữ liệu Chi tiết (Data Dictionary - 20%)</h3>
+    <h3 class="sub-section-title">2.1. Thực thể & Từ điển Dữ liệu Chi tiết (Data Dictionary)</h3>
     <p>
       Hệ thống bao gồm các bảng thực thể tiếng Việt hoàn chỉnh, được phân tách mạch lạc theo các nhóm phân vùng nghiệp vụ:
     </p>
@@ -829,7 +829,7 @@ flowchart TD
 
     <div class="page-break"></div>
 
-    <h3 class="sub-section-title">2.2. Ràng buộc Khóa (PK, FK) & Tính Toàn Vẹn Dữ Liệu (15%)</h3>
+    <h3 class="sub-section-title">2.2. Ràng buộc Khóa (PK, FK) & Tính Toàn Vẹn Dữ Liệu</h3>
     <p>
       Mô hình loại bỏ 100% rủi ro phát sinh <strong>dữ liệu mồ côi (Orphaned Records)</strong> nhờ cấu hình tường minh các hành vi khóa ngoại:
     </p>
@@ -913,7 +913,7 @@ flowchart TD
       </tbody>
     </table>
 
-    <h3 class="sub-section-title">2.3. Sơ đồ Quan hệ Thực thể & Triệt tiêu Quan hệ Nhiều-Nhiều (15%)</h3>
+    <h3 class="sub-section-title">2.3. Sơ đồ Quan hệ Thực thể & Triệt tiêu Quan hệ Nhiều-Nhiều</h3>
     <p>
       Hệ thống xử lý triệt để <strong>các mối quan hệ Nhiều - Nhiều (N-N)</strong> cốt lõi bằng các bảng trung gian chuyên biệt:
     </p>
@@ -1041,7 +1041,7 @@ erDiagram
 
     <div class="page-break"></div>
 
-    <h3 class="sub-section-title">2.4. Phân tích & Chứng minh Mức độ Chuẩn Hóa (10%)</h3>
+    <h3 class="sub-section-title">2.4. Phân tích & Chứng minh Mức độ Chuẩn Hóa</h3>
     <p>
       Cơ sở dữ liệu <code>ApartmentDB</code> được thiết kế theo đúng quy chuẩn lý thuyết hệ CSDL quan hệ, chứng minh thỏa mãn <strong>Dạng chuẩn 3 (3NF)</strong>:
     </p>
@@ -1075,11 +1075,11 @@ erDiagram
     <!-- PHẦN KẾT LUẬN -->
     <h2 class="section-title">PHẦN III: KẾT LUẬN & ĐÁNH GIÁ TIẾN ĐỘ</h2>
     <p>
-      Báo cáo đã hoàn thành toàn diện các mục tiêu đặt ra cho cả 2 bước theo đúng barem yêu cầu:
+      Báo cáo đã hoàn thành toàn diện các mục tiêu đặt ra cho cả 2 bước:
     </p>
     <ul>
-      <li><strong>Bước 1 (Requirement Analysis - 40%):</strong> Hoàn thành 100% - Định nghĩa rõ 4 Actors, ma trận phân quyền RBAC chi tiết ánh xạ đầy đủ 31 bảng CSDL tiếng Việt, hệ thống Use Case chuẩn động từ + danh từ, User Stories chi tiết, 2 sơ đồ Flowchart nghiệp vụ có xử lý triệt để các Edge Cases.</li>
-      <li><strong>Bước 2 (Database Design & ERD - 60%):</strong> Hoàn thành 100% - Xây dựng hệ thống 31 bảng CSDL tiếng Việt đồng bộ hoàn hảo với mô hình ERD, 100% bảng có Khóa chính tự tăng, ràng buộc Khóa ngoại chống mồ côi dữ liệu, triệt tiêu quan hệ nhiều-nhiều bằng các bảng trung gian và chứng minh đạt chuẩn 3NF.</li>
+      <li><strong>Bước 1 (Phân tích yêu cầu):</strong> Hoàn thành toàn diện - Định nghĩa rõ 4 Actors, ma trận phân quyền RBAC chi tiết ánh xạ đầy đủ 31 bảng CSDL tiếng Việt, hệ thống Use Case chuẩn động từ + danh từ, User Stories chi tiết, 2 sơ đồ Flowchart nghiệp vụ có xử lý triệt để các Edge Cases.</li>
+      <li><strong>Bước 2 (Thiết kế CSDL & ERD):</strong> Hoàn thành toàn diện - Xây dựng hệ thống 31 bảng CSDL tiếng Việt đồng bộ hoàn hảo với mô hình ERD, 100% bảng có Khóa chính tự tăng, ràng buộc Khóa ngoại chống mồ côi dữ liệu, triệt tiêu quan hệ nhiều-nhiều bằng các bảng trung gian và chứng minh đạt chuẩn 3NF.</li>
       <li><strong>Khả năng ứng dụng thực tế:</strong> Script CSDL hoàn chỉnh <code>ApartmentDB.sql</code> và <code>docs/ApartmentDB_Full_Schema.sql</code> có thể chạy trực tiếp trên SQL Server hoặc tích hợp trực tiếp vào Spring Boot JPA / Hibernate mà không phát sinh lỗi xung đột.</li>
     </ul>
   </div>

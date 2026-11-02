@@ -1,6 +1,7 @@
 package com.qlphongtro.repository;
 
 import com.qlphongtro.entity.RoomListing;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,43 +12,39 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository thao tác dữ liệu bảng RoomListings.
- * Hỗ trợ tra cứu phòng cho khách xem và quản lý cho ADMIN/STAFF.
+ * Repository thao tác bảng RoomListings.
+ * Hỗ trợ tra cứu đa tiêu chí: Trạng thái, Khoảng giá, Diện tích, Tầng, Từ khóa & Sắp xếp.
  */
 @Repository
 public interface RoomListingRepository extends JpaRepository<RoomListing, Integer> {
 
-    /** Tìm phòng theo mã phòng */
     Optional<RoomListing> findByRoomCode(String roomCode);
 
-    /**
-     * Lấy tất cả phòng trống - dùng ở trang danh sách công khai cho khách xem.
-     * Không cần đăng nhập để xem.
-     */
     List<RoomListing> findByStatusOrderByPriceAsc(String status);
 
-    /** Lấy tất cả phòng theo trạng thái (dùng cho ADMIN/STAFF) */
+    List<RoomListing> findByStatus(String status, Sort sort);
+
     List<RoomListing> findByStatus(String status);
 
-    /**
-     * Tìm kiếm phòng theo tiêu đề hoặc mô tả - hỗ trợ tìm kiếm cho khách.
-     * Không phân biệt chữ hoa thường.
-     */
-    @Query("SELECT r FROM RoomListing r WHERE LOWER(r.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(r.description) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<RoomListing> searchByKeyword(@Param("keyword") String keyword);
+    @Query("SELECT r FROM RoomListing r WHERE " +
+           "(:keyword IS NULL OR :keyword = '' OR " +
+           " LOWER(r.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           " LOWER(r.roomCode) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           " LOWER(r.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           " LOWER(r.amenities) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:status IS NULL OR :status = '' OR :status = 'ALL' OR r.status = :status) AND " +
+           "(:minPrice IS NULL OR r.price >= :minPrice) AND " +
+           "(:maxPrice IS NULL OR r.price <= :maxPrice) AND " +
+           "(:floorNo IS NULL OR r.floorNo = :floorNo)")
+    List<RoomListing> searchAndFilter(
+            @Param("keyword") String keyword,
+            @Param("status") String status,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("floorNo") Integer floorNo,
+            Sort sort);
 
-    /**
-     * Tìm phòng trống trong khoảng giá - dùng để filter khi khách tìm phòng.
-     */
-    @Query("SELECT r FROM RoomListing r WHERE r.status = 'TRONG' " +
-           "AND r.price BETWEEN :minPrice AND :maxPrice ORDER BY r.price ASC")
-    List<RoomListing> findAvailableByPriceRange(@Param("minPrice") BigDecimal minPrice,
-                                                @Param("maxPrice") BigDecimal maxPrice);
-
-    /** Kiểm tra mã phòng đã tồn tại chưa - dùng khi ADMIN tạo phòng mới */
     boolean existsByRoomCode(String roomCode);
 
-    /** Đếm số phòng theo trạng thái - hiển thị thống kê trên dashboard */
     long countByStatus(String status);
 }

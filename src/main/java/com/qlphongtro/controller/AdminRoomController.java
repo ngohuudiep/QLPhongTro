@@ -11,20 +11,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Controller quản lý phòng trọ dành riêng cho ADMIN.
- * Toàn bộ URL /admin/rooms/** chỉ ADMIN mới truy cập được.
- *
- * URL pattern:
- *   GET  /admin/rooms           → danh sách tất cả phòng
- *   GET  /admin/rooms/new       → form thêm mới
- *   GET  /admin/rooms/edit/{id} → form chỉnh sửa
- *   POST /admin/rooms/save      → lưu tạo mới / cập nhật
- *   POST /admin/rooms/delete/{id} → xóa phòng
- */
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.util.List;
+
 @Controller
-@RequestMapping("/admin/rooms")
-@PreAuthorize("hasRole('ADMIN')")   // Tất cả method đều yêu cầu ADMIN
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class AdminRoomController {
 
     private final RoomListingService roomListingService;
@@ -34,104 +26,160 @@ public class AdminRoomController {
         this.roomListingService = roomListingService;
     }
 
-    // ======================================================
-    // 1. Danh sách tất cả phòng (cả trống, đã thuê, bảo trì)
-    // ======================================================
-    @GetMapping
-    public String listRooms(Model model) {
-        model.addAttribute("rooms",       roomListingService.getAllRooms());
-        model.addAttribute("totalTrong",   roomListingService.countAvailableRooms());
-        model.addAttribute("totalDaTHue",  countByStatus("DA_THUE"));
-        model.addAttribute("totalBaoTri",  countByStatus("BAO_TRI"));
-        model.addAttribute("pageTitle",    "Quản lý Phòng trọ");
+    // ==============================================================
+    // 1. DASHBOARD QUẢN TRỊ (GET /admin/dashboard)
+    // ==============================================================
+    @GetMapping("/admin/dashboard")
+    public String showDashboard(Model model) {
+        List<RoomListing> allRooms = roomListingService.getAllRooms();
+
+        long totalRooms = allRooms.size();
+        long totalTrong = allRooms.stream().filter(r -> "TRONG".equals(r.getStatus())).count();
+        long totalDaThue = allRooms.stream().filter(r -> "DA_THUE".equals(r.getStatus())).count();
+        long totalBaoTri = allRooms.stream().filter(r -> "BAO_TRI".equals(r.getStatus())).count();
+
+        // Tỷ lệ lấp đầy (%)
+        double occupancyRate = totalRooms > 0 ? ((double) totalDaThue / totalRooms) * 100.0 : 0.0;
+
+        // Ước tính doanh thu tháng hiện tại từ các phòng ĐÃ THUÊ
+        BigDecimal monthlyRevenue = allRooms.stream()
+                .filter(r -> "DA_THUE".equals(r.getStatus()) && r.getPrice() != null)
+                .map(RoomListing::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Doanh thu tối đa nếu lấp đầy 100%
+        BigDecimal potentialRevenue = allRooms.stream()
+                .filter(r -> r.getPrice() != null)
+                .map(RoomListing::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        DecimalFormat df = new DecimalFormat("###,###,###");
+
+        model.addAttribute("totalRooms", totalRooms);
+        model.addAttribute("totalTrong", totalTrong);
+        model.addAttribute("totalDaThue", totalDaThue);
+        model.addAttribute("totalBaoTri", totalBaoTri);
+        model.addAttribute("occupancyRate", String.format("%.1f", occupancyRate));
+        model.addAttribute("monthlyRevenue", df.format(monthlyRevenue) + " đ");
+        model.addAttribute("potentialRevenue", df.format(potentialRevenue) + " đ");
+        model.addAttribute("recentRooms", allRooms.stream().limit(6).toList());
+
+        return "admin/dashboard";
+    }
+
+    // ==============================================================
+    // 2. DANH SÁCH TẤT CẢ PHÒNG (GET /admin/rooms)
+    // ==============================================================
+    @GetMapping("/admin/rooms")
+    public String listAdminRooms(
+            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(name = "status", required = false, defaultValue = "ALL") String status,
+            Model model) {
+
+        String cleanKeyword = (keyword != null) ? keyword.trim() : "";
+        String cleanStatus = (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ALL";
+
+        List<RoomListing> allRooms = roomListingService.getAllRooms();
+        long totalRooms = allRooms.size();
+        long totalTrong = allRooms.stream().filter(r -> "TRONG".equalsIgnoreCase(r.getStatus())).count();
+        long totalDaThue = allRooms.stream().filter(r -> "DA_THUE".equalsIgnoreCase(r.getStatus())).count();
+        long totalBaoTri = allRooms.stream().filter(r -> "BAO_TRI".equalsIgnoreCase(r.getStatus())).count();
+
+        List<RoomListing> rooms;
+        if (!cleanKeyword.isEmpty() || !cleanStatus.equals("ALL")) {
+            rooms = roomListingService.filterRooms(cleanKeyword, cleanStatus, "all", null, "newest");
+        } else {
+            rooms = allRooms;
+        }
+
+        model.addAttribute("rooms", rooms);
+        model.addAttribute("keyword", cleanKeyword);
+        model.addAttribute("selectedStatus", cleanStatus);
+        model.addAttribute("totalRooms", totalRooms);
+        model.addAttribute("totalTrong", totalTrong);
+        model.addAttribute("totalDaThue", totalDaThue);
+        model.addAttribute("totalBaoTri", totalBaoTri);
+
         return "admin/rooms";
     }
 
-    // ======================================================
-    // 2. Form thêm mới phòng (GET)
-    // ======================================================
-    @GetMapping("/new")
+    // ==============================================================
+    // 3. FORM THÊM MỚI PHÒNG (GET /admin/rooms/new)
+    // ==============================================================
+    @GetMapping("/admin/rooms/new")
+    @PreAuthorize("hasRole('ADMIN')")
     public String showCreateForm(Model model) {
         RoomListing room = new RoomListing();
-        room.setStatus("TRONG");    // Mặc định trạng thái trống khi tạo mới
-        model.addAttribute("room",      room);
-        model.addAttribute("pageTitle", "Thêm phòng mới");
-        model.addAttribute("isEdit",    false);
+        room.setStatus("TRONG");
+        room.setFloorNo(1);
+        room.setAmenities("Điều hòa, Wifi, Nóng lạnh, Gác lửng");
+        model.addAttribute("room", room);
+        model.addAttribute("isEdit", false);
         return "admin/room-form";
     }
 
-    // ======================================================
-    // 3. Form chỉnh sửa phòng (GET)
-    // ======================================================
-    @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable("id") Integer id,
-                               Model model,
-                               RedirectAttributes redirectAttributes) {
+    // ==============================================================
+    // 4. FORM CHỈNH SỬA PHÒNG (GET /admin/rooms/edit/{id})
+    // ==============================================================
+    @GetMapping("/admin/rooms/edit/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String showEditForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
         try {
             RoomListing room = roomListingService.getById(id);
-            model.addAttribute("room",      room);
-            model.addAttribute("pageTitle", "Chỉnh sửa phòng: " + room.getRoomCode());
-            model.addAttribute("isEdit",    true);
+            model.addAttribute("room", room);
+            model.addAttribute("isEdit", true);
             return "admin/room-form";
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMsg", "Không tìm thấy phòng ID: " + id);
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy phòng: " + e.getMessage());
             return "redirect:/admin/rooms";
         }
     }
 
-    // ======================================================
-    // 4. Lưu phòng — Tạo mới hoặc Cập nhật (POST)
-    //    Bao gồm logic cập nhật giá tiền từ form Admin.
-    // ======================================================
-    @PostMapping("/save")
-    public String saveRoom(@Valid @ModelAttribute("room") RoomListing room,
-                           BindingResult bindingResult,
-                           Model model,
-                           RedirectAttributes redirectAttributes) {
+    // ==============================================================
+    // 5. LƯU TẠO MỚI HOẶC CẬP NHẬT (POST /admin/rooms/save)
+    // ==============================================================
+    @PostMapping("/admin/rooms/save")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String saveRoom(
+            @Valid @ModelAttribute("room") RoomListing room,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes) {
 
-        // Kiểm tra lỗi validation từ @NotBlank, @Size...
         if (bindingResult.hasErrors()) {
-            model.addAttribute("pageTitle", room.getListingId() == null ? "Thêm phòng mới" : "Chỉnh sửa phòng");
-            model.addAttribute("isEdit",    room.getListingId() != null);
-            model.addAttribute("errorMsg",  "Vui lòng kiểm tra lại các trường thông tin bên dưới.");
+            model.addAttribute("isEdit", room.getListingId() != null);
+            model.addAttribute("errorMessage", "Vui lòng kiểm tra lại các trường thông tin bị lỗi.");
             return "admin/room-form";
         }
 
         try {
             boolean isNew = (room.getListingId() == null);
-            // Service sẽ validate mã phòng trùng và giá tiền, rồi lưu vào SQL Server
             roomListingService.save(room);
-            redirectAttributes.addFlashAttribute("successMsg",
-                    isNew ? "✅ Thêm phòng mới thành công!" : "✅ Cập nhật phòng thành công!");
+            redirectAttributes.addFlashAttribute("successMessage",
+                    isNew ? "Thêm phòng mới thành công!" : "Cập nhật phòng thành công!");
+            return "redirect:/admin/rooms";
         } catch (IllegalArgumentException e) {
-            // Lỗi nghiệp vụ (mã trùng, giá âm...)
-            model.addAttribute("pageTitle", room.getListingId() == null ? "Thêm phòng mới" : "Chỉnh sửa phòng");
-            model.addAttribute("isEdit",    room.getListingId() != null);
-            model.addAttribute("errorMsg",  e.getMessage());
+            model.addAttribute("isEdit", room.getListingId() != null);
+            model.addAttribute("errorMessage", e.getMessage());
             return "admin/room-form";
         }
-
-        return "redirect:/admin/rooms";
     }
 
-    // ======================================================
-    // 5. Xóa phòng (POST — tránh CSRF qua GET link)
-    // ======================================================
-    @PostMapping("/delete/{id}")
-    public String deleteRoom(@PathVariable("id") Integer id,
-                             RedirectAttributes redirectAttributes) {
+    // ==============================================================
+    // 6. XÓA PHÒNG (POST /admin/rooms/delete/{id})
+    // ==============================================================
+    @PostMapping("/admin/rooms/delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deleteRoom(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
             roomListingService.delete(id);
-            redirectAttributes.addFlashAttribute("successMsg", "🗑️ Đã xóa phòng thành công.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa phòng thành công khỏi hệ thống!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMsg", "Lỗi khi xóa phòng: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa phòng: " + e.getMessage());
         }
         return "redirect:/admin/rooms";
     }
 
-    // ======================================================
-    // Helper — đếm phòng theo status để hiển thị stat card
-    // ======================================================
     private long countByStatus(String status) {
         return roomListingService.getAllRooms().stream()
                 .filter(r -> status.equals(r.getStatus()))

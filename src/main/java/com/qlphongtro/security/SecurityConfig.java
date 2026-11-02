@@ -78,8 +78,8 @@ public class SecurityConfig {
                 // Tài nguyên tĩnh: CSS, JS, ảnh - không cần đăng nhập
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
-                // Trang đăng nhập / đăng ký - không cần đăng nhập
-                .requestMatchers("/login", "/register", "/error").permitAll()
+                // Trang đăng nhập / đăng ký / quên mật khẩu - không cần đăng nhập
+                .requestMatchers("/login", "/register", "/forgot-password/**", "/error").permitAll()
 
                 // Xem danh sách phòng và chi tiết phòng - KHÔNG cần đăng nhập
                 // Cả khách vãng lai và USER đều xem được

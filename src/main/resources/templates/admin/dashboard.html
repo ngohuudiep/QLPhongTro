@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Fonts & Bootstrap 5 với subset=vietnamese -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&subset=vietnamese&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal);
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- Header Navbar -->
+    <div th:replace="~{layout/navbar :: navbar}"></div>
+
+    <main class="py-4 flex-grow-1">
+        <div class="container">
+            
+            <!-- Dashboard Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-2 border-bottom">
+                <div>
+                    <h3 class="fw-bold mb-1">
+                        <i class="bi bi-speedometer2 text-primary me-2"></i>Tổng Quan Quản Trị
+                    </h3>
+                    <p class="text-muted small mb-0">Theo dõi hiệu suất vận hành, tỷ lệ lấp đầy phòng và doanh thu tháng</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/rooms/new}" class="btn btn-primary shadow-sm">
+                        <i class="bi bi-plus-circle"></i> Thêm phòng mới
+                    </a>
+                    <a th:href="@{/admin/rooms}" class="btn btn-light border shadow-sm">
+                        <i class="bi bi-sliders"></i> Quản lý phòng
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPI Cards Row -->
+            <div class="row g-3 mb-4">
+                <!-- KPI 1: Tổng số phòng -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Tổng số phòng</span>
+                            <h3 class="fw-bold my-1" th:text="${totalRooms}">16</h3>
+                            <span class="badge bg-light text-muted border">Tất cả tầng</span>
+                        </div>
+                        <div class="kpi-icon bg-teal-100 text-teal-800" style="background: rgba(13,148,136,0.15); color: #0d9488;">
+                            <i class="bi bi-houses-fill"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 2: Phòng đang trống -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Phòng còn trống</span>
+                            <h3 class="fw-bold my-1 text-success" th:text="${totalTrong}">8</h3>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Sẵn sàng cho thuê</span>
+                        </div>
+                        <div class="kpi-icon bg-success-subtle text-success">
+                            <i class="bi bi-door-open-fill"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 3: Phòng đã thuê -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Phòng đã thuê</span>
+                            <h3 class="fw-bold my-1 text-primary" th:text="${totalDaThue}">6</h3>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Đang có khách</span>
+                        </div>
+                        <div class="kpi-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-person-check-fill"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Đang bảo trì -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted small fw-semibold">Đang sửa chữa</span>
+                            <h3 class="fw-bold my-1 text-warning" th:text="${totalBaoTri}">2</h3>
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Bảo trì thiết bị</span>
+                        </div>
+                        <div class="kpi-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue & Occupancy Bar -->
+            <div class="row g-4 mb-4">
+                <!-- Revenue Card -->
+                <div class="col-lg-6">
+                    <div class="card-modern p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0"><i class="bi bi-cash-stack text-success me-2"></i>Doanh thu phòng hàng tháng</h5>
+                            <span class="badge bg-success text-white px-2 py-1">Thực thu</span>
+                        </div>
+                        <div class="display-6 fw-extrabold text-success mb-2" th:text="${monthlyRevenue}">24.500.000 đ</div>
+                        <p class="text-muted small mb-3">
+                            Tổng tiền thu từ các hợp đồng phòng đang thuê. Tiềm năng tối đa khi kín phòng: <strong th:text="${potentialRevenue}">58.000.000 đ</strong>.
+                        </p>
+                        <!-- Progress bar -->
+                        <div class="d-flex justify-content-between text-muted small mb-1">
+                            <span>Tỷ lệ lấp đầy phòng trọ</span>
+                            <strong class="text-main" th:text="${occupancyRate} + '%'">50%</strong>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 5px;">
+                            <div class="progress-bar bg-teal-600" role="progressbar" th:style="'width: ' + ${occupancyRate} + '%; background-color: var(--teal-600);'" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Card -->
+                <div class="col-lg-6">
+                    <div class="card-modern p-4 h-100">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Tỷ lệ phân bổ trạng thái phòng</h5>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="roomStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Rooms Table -->
+            <div class="card-modern p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-clock-history text-primary me-2"></i>Phòng cập nhật gần đây</h5>
+                    <a th:href="@{/admin/rooms}" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã phòng</th>
+                                <th>Tiêu đề phòng</th>
+                                <th>Tầng</th>
+                                <th>Giá thuê</th>
+                                <th>Trạng thái</th>
+                                <th>Người thuê</th>
+                                <th class="text-end">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="r : ${recentRooms}">
+                                <td><strong class="text-primary" th:text="${r.roomCode}">P101</strong></td>
+                                <td class="fw-semibold text-truncate" style="max-width: 250px;" th:text="${r.title}">Studio</td>
+                                <td>Tầng <span th:text="${r.floorNo}">1</span></td>
+                                <td class="fw-bold" th:text="${r.formattedPrice}">3.500.000 đ</td>
+                                <td>
+                                    <span class="badge-status" th:classappend="${r.statusBadgeClass}">
+                                        <span th:text="${r.statusLabel}">Còn trống</span>
+                                    </span>
+                                </td>
+                                <td class="text-muted small" th:text="${r.currentTenant != null ? r.currentTenant : '---'}">---</td>
+                                <td class="text-end">
+                                    <a th:href="@{/admin/rooms/edit/{id}(id=${r.listingId})}" class="btn btn-sm btn-light border" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil-fill text-primary"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer Fragment -->
+    <div th:replace="~{layout/footer :: footer}"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/app.js}"></script>
+
+    <!-- Chart Init -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const totalTrong = /*[[${totalTrong}]]*/ 8;
+        const totalDaThue = /*[[${totalDaThue}]]*/ 6;
+        const totalBaoTri = /*[[${totalBaoTri}]]*/ 2;
+
+        const ctx = document.getElementById('roomStatusChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Còn trống', 'Đã cho thuê', 'Đang bảo trì'],
+                datasets: [{
+                    data: [totalTrong, totalDaThue, totalBaoTri],
+                    backgroundColor: ['#10b981', '#0d9488', '#f59e0b'],
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 16 }
+                    }
+                },
+                cutout: '68%'
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>

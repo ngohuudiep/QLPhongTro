@@ -52,7 +52,7 @@ public class BookingRequest {
     private String status = "PENDING";
 
     /** Ghi chú từ Staff khi duyệt hoặc từ chối */
-    @Column(name = "note", length = 500)
+    @Column(name = "note", columnDefinition = "NVARCHAR(500)")
     private String note;
 
     /** Staff/Admin xử lý yêu cầu này - nullable (chưa xử lý thì null) */

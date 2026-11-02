@@ -1,4 +1,5 @@
 @echo off
+setlocal
 chcp 65001 >nul
 title Quan Ly Phong Tro - Khoi Chay Ung Dung
 
@@ -9,6 +10,7 @@ echo.
 
 set MAVEN_DIR=%USERPROFILE%\apache-maven-3.9.6
 set MVN_EXEC=mvn
+set "MAVEN_OPTS=-Dfile.encoding=UTF-8"
 
 if exist "%MAVEN_DIR%\bin\mvn.cmd" (
     set "MVN_EXEC=%MAVEN_DIR%\bin\mvn.cmd"
@@ -27,11 +29,9 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo [2/2] Dang khoi dong ung dung Spring Boot tai http://localhost:8080...
-echo (Trinh duyet se tu dong mo trang chu sau khoang 10 giay khi ung dung san sang...)
 echo.
 
-:: Mo trinh duyet o tien trinh ngam sau 10 giay de cho Spring Boot khoi dong
-start "" cmd /c "timeout /t 10 /nobreak >nul & start http://localhost:8080"
+start "" powershell -NoProfile -ExecutionPolicy Bypass -Command "$ready = $false; for ($i=0; $i -lt 45; $i++) { Start-Sleep -Seconds 2; try { $tcp = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 8080); if ($tcp.Connected) { $tcp.Close(); $ready = $true; break; } } catch {} } if ($ready) { Start-Process 'http://localhost:8080' }"
 
 call "%MVN_EXEC%" spring-boot:run
 pause

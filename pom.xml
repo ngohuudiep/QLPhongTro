@@ -17,6 +17,8 @@
 	<properties>
 		<java.version>17</java.version>
 		<lombok.version>1.18.38</lombok.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
 
 	<dependencies>
@@ -95,6 +97,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>
 				<configuration>
+					<encoding>UTF-8</encoding>
 					<parameters>true</parameters>
 					<annotationProcessorPaths>
 						<path>

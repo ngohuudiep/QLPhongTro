@@ -3,6 +3,7 @@ package com.qlphongtro.security;
 import com.qlphongtro.entity.User;
 import com.qlphongtro.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,8 +15,8 @@ import java.util.List;
 
 /**
  * Implementation của UserDetailsService cho Spring Security.
- * Khi người dùng đăng nhập, Spring Security sẽ gọi loadUserByUsername()
- * để lấy thông tin tài khoản và quyền từ database.
+ * Hỗ trợ đăng nhập linh hoạt bằng Username, Email hoặc Số điện thoại.
+ * Tích hợp kiểm tra tạm khóa tài khoản (Rate Limit / Brute-force protection).
  */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -27,31 +28,26 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
-    /**
-     * Tải thông tin người dùng từ DB theo username.
-     * Được Spring Security gọi tự động khi người dùng submit form đăng nhập.
-     *
-     * @param username tên đăng nhập từ form login
-     * @return UserDetails với thông tin xác thực và danh sách quyền
-     * @throws UsernameNotFoundException nếu không tìm thấy tài khoản
-     */
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Tìm người dùng trong DB - ném exception nếu không tồn tại
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "Không tìm thấy tài khoản: " + username));
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        // Tìm người dùng theo Username, Email hoặc SĐT
+        User user = userRepository.findByIdentifier(identifier.trim())
+                .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập không chính xác"));
 
-        // Chuyển Role của user thành GrantedAuthority
-        // Spring Security yêu cầu role prefix = "ROLE_" (vd: ROLE_ADMIN, ROLE_STAFF)
+        // Kiểm tra xem tài khoản có đang bị tạm khóa (Rate limit) không
+        if (user.isAccountLocked()) {
+            throw new LockedException("Tài khoản đang bị tạm khóa do nhập sai mật khẩu nhiều lần. Vui lòng thử lại sau 15 phút.");
+        }
+
+        // Quyền theo Role (ADMIN, USER, STAFF)
         String roleName = "ROLE_" + user.getRole().getRoleName();
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(roleName));
 
-        // Trả về UserDetails chuẩn của Spring Security
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
-                .password(user.getPassword())       // Đã được mã hóa BCrypt trong DB
+                .password(user.getPassword())
                 .authorities(authorities)
+                .accountLocked(user.isAccountLocked())
                 .build();
     }
 }
