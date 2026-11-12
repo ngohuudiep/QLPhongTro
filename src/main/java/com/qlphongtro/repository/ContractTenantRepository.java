@@ -13,4 +13,6 @@ public interface ContractTenantRepository extends JpaRepository<ContractTenant, 
     List<ContractTenant> findById_ContractId(Integer contractId);
 
     List<ContractTenant> findById_TenantId(Integer tenantId);
+
+    boolean existsById_TenantId(Integer tenantId);
 }

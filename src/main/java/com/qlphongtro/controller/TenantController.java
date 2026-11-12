@@ -4,6 +4,7 @@ import com.qlphongtro.entity.Tenant;
 import com.qlphongtro.service.TenantService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/tenants")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class TenantController {
 
     private final TenantService tenantService;
@@ -80,7 +82,7 @@ public class TenantController {
     }
 
     // 5. Xóa khách thuê
-    @GetMapping("/delete/{id}")
+    @PostMapping("/delete/{id}")
     public String deleteTenant(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
             tenantService.deleteTenant(id);

@@ -1,6 +1,7 @@
 package com.qlphongtro.service.impl;
 
 import com.qlphongtro.entity.Tenant;
+import com.qlphongtro.repository.ContractTenantRepository;
 import com.qlphongtro.repository.TenantRepository;
 import com.qlphongtro.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +15,14 @@ import java.util.List;
 public class TenantServiceImpl implements TenantService {
 
     private final TenantRepository tenantRepository;
+    private final ContractTenantRepository contractTenantRepository;
 
     @Autowired
-    public TenantServiceImpl(TenantRepository tenantRepository) {
+    public TenantServiceImpl(
+            TenantRepository tenantRepository,
+            ContractTenantRepository contractTenantRepository) {
         this.tenantRepository = tenantRepository;
+        this.contractTenantRepository = contractTenantRepository;
     }
 
     @Override
@@ -42,6 +47,9 @@ public class TenantServiceImpl implements TenantService {
     public void deleteTenant(Integer id) {
         if (!tenantRepository.existsById(id)) {
             throw new RuntimeException("Không thể xóa, khách thuê không tồn tại ID: " + id);
+        }
+        if (contractTenantRepository.existsById_TenantId(id)) {
+            throw new IllegalStateException("Không thể xóa khách thuê vì đang có hợp đồng liên quan.");
         }
         tenantRepository.deleteById(id);
     }
