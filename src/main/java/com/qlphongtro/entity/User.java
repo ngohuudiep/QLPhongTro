@@ -49,13 +49,22 @@ public class User {
     @Column(name = "lockout_until")
     private LocalDateTime lockoutUntil;
 
-    /** Mã OTP khôi phục mật khẩu */
-    @Column(name = "reset_otp", length = 10)
-    private String resetOtp;
+    /** BCrypt hash of the password reset OTP */
+    @Column(name = "reset_otp", length = 100)
+    private String resetOtpHash;
 
     /** Thời gian hết hạn của OTP */
     @Column(name = "reset_otp_expiry")
     private LocalDateTime resetOtpExpiry;
+
+    @Column(name = "reset_otp_failed_attempts")
+    private Integer resetOtpFailedAttempts = 0;
+
+    @Column(name = "reset_otp_request_count")
+    private Integer resetOtpRequestCount = 0;
+
+    @Column(name = "reset_otp_request_window_start")
+    private LocalDateTime resetOtpRequestWindowStart;
 
     /** Vai trò người dùng (ADMIN: Chủ trọ, USER: Người thuê, STAFF: Nhân viên) */
     @ManyToOne(fetch = FetchType.EAGER)
@@ -101,11 +110,20 @@ public class User {
     public LocalDateTime getLockoutUntil() { return lockoutUntil; }
     public void setLockoutUntil(LocalDateTime lockoutUntil) { this.lockoutUntil = lockoutUntil; }
 
-    public String getResetOtp() { return resetOtp; }
-    public void setResetOtp(String resetOtp) { this.resetOtp = resetOtp; }
+    public String getResetOtpHash() { return resetOtpHash; }
+    public void setResetOtpHash(String resetOtpHash) { this.resetOtpHash = resetOtpHash; }
 
     public LocalDateTime getResetOtpExpiry() { return resetOtpExpiry; }
     public void setResetOtpExpiry(LocalDateTime resetOtpExpiry) { this.resetOtpExpiry = resetOtpExpiry; }
+
+    public Integer getResetOtpFailedAttempts() { return resetOtpFailedAttempts != null ? resetOtpFailedAttempts : 0; }
+    public void setResetOtpFailedAttempts(Integer resetOtpFailedAttempts) { this.resetOtpFailedAttempts = resetOtpFailedAttempts; }
+
+    public Integer getResetOtpRequestCount() { return resetOtpRequestCount != null ? resetOtpRequestCount : 0; }
+    public void setResetOtpRequestCount(Integer resetOtpRequestCount) { this.resetOtpRequestCount = resetOtpRequestCount; }
+
+    public LocalDateTime getResetOtpRequestWindowStart() { return resetOtpRequestWindowStart; }
+    public void setResetOtpRequestWindowStart(LocalDateTime resetOtpRequestWindowStart) { this.resetOtpRequestWindowStart = resetOtpRequestWindowStart; }
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }

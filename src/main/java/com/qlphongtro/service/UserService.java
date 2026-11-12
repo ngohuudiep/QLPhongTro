@@ -9,6 +9,6 @@ public interface UserService {
     User getByUsername(String username);
     void updateProfile(String username, ProfileDto.UpdateInfo dto);
     void changePassword(String username, ProfileDto.ChangePassword dto);
-    String generateResetOtp(String identifier);
-    void resetPasswordWithOtp(String identifier, String otp, String newPassword);
+    void generateResetOtp(String identifier);
+    boolean resetPasswordWithOtp(String identifier, String otp, String newPassword);
 }

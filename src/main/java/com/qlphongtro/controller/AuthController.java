@@ -94,16 +94,12 @@ public class AuthController {
     public String sendOtp(
             @ModelAttribute("forgotDto") ProfileDto.ForgotPassword dto,
             Model model) {
-        try {
-            String otp = userService.generateResetOtp(dto.getIdentifier());
-            model.addAttribute("step", 2);
-            model.addAttribute("demoOtp", otp); // Hiển thị mã demo trên màn hình để kiểm tra nhanh
-            model.addAttribute("forgotDto", dto);
-            model.addAttribute("successMessage", "Mã xác thực OTP đã được tạo (Demo: " + otp + "). Mã có hiệu lực trong 10 phút.");
-        } catch (Exception e) {
-            model.addAttribute("step", 1);
-            model.addAttribute("errorMessage", e.getMessage());
-        }
+        dto.setOtp(null);
+        dto.setNewPassword(null);
+        userService.generateResetOtp(dto.getIdentifier());
+        model.addAttribute("step", 2);
+        model.addAttribute("forgotDto", dto);
+        model.addAttribute("successMessage", "Nếu thông tin phù hợp với tài khoản, hướng dẫn đặt lại mật khẩu sẽ được gửi đến email đã đăng ký.");
         return "auth/forgot-password";
     }
 
@@ -112,15 +108,16 @@ public class AuthController {
             @ModelAttribute("forgotDto") ProfileDto.ForgotPassword dto,
             Model model,
             RedirectAttributes redirectAttributes) {
-        try {
-            userService.resetPasswordWithOtp(dto.getIdentifier(), dto.getOtp(), dto.getNewPassword());
+        if (userService.resetPasswordWithOtp(dto.getIdentifier(), dto.getOtp(), dto.getNewPassword())) {
             redirectAttributes.addFlashAttribute("successMessage", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.");
             return "redirect:/login";
-        } catch (Exception e) {
-            model.addAttribute("step", 2);
-            model.addAttribute("errorMessage", e.getMessage());
-            return "auth/forgot-password";
         }
+
+        dto.setOtp(null);
+        dto.setNewPassword(null);
+        model.addAttribute("step", 2);
+        model.addAttribute("errorMessage", "Mã xác thực không hợp lệ hoặc đã hết hạn.");
+        return "auth/forgot-password";
     }
 
     // ==============================================================
