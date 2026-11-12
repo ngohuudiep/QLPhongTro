@@ -91,7 +91,7 @@
 
 	<build>
 		<plugins>
-			<!-- Maven Compiler Plugin hỗ trợ Lombok với Java 24 -->
+			<!-- Maven Compiler Plugin hỗ trợ Lombok với Java 17 -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
