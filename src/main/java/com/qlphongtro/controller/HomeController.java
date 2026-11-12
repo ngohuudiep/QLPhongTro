@@ -1,5 +1,6 @@
 package com.qlphongtro.controller;
 
+import com.qlphongtro.dto.PublicRoomDto;
 import com.qlphongtro.entity.RoomListing;
 import com.qlphongtro.service.RoomListingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,10 @@ public class HomeController {
             @RequestParam(name = "sortBy", required = false, defaultValue = "price_asc") String sortBy,
             Model model) {
 
-        List<RoomListing> rooms = roomListingService.filterRooms(keyword, status, priceRange, floorNo, sortBy);
+        List<PublicRoomDto> rooms = roomListingService.filterRooms(keyword, status, priceRange, floorNo, sortBy)
+                .stream()
+                .map(PublicRoomDto::from)
+                .toList();
 
         model.addAttribute("rooms", rooms);
         model.addAttribute("totalRooms", roomListingService.getAllRooms().size());
@@ -59,10 +63,11 @@ public class HomeController {
     public String roomDetail(@PathVariable("id") Integer id, Model model, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
         try {
             RoomListing room = roomListingService.getById(id);
-            model.addAttribute("room", room);
+            model.addAttribute("room", PublicRoomDto.from(room));
             // Gợi ý thêm 3 phòng tương tự
-            List<RoomListing> similarRooms = roomListingService.getAvailableRooms().stream()
+            List<PublicRoomDto> similarRooms = roomListingService.getAvailableRooms().stream()
                     .filter(r -> !r.getListingId().equals(id))
+                    .map(PublicRoomDto::from)
                     .limit(3)
                     .toList();
             model.addAttribute("similarRooms", similarRooms);
