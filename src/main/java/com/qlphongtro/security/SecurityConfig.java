@@ -1,18 +1,22 @@
 package com.qlphongtro.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 /**
  * Cấu hình bảo mật Spring Security cho toàn bộ ứng dụng.
@@ -29,10 +33,17 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final String rememberMeKey;
 
     @Autowired
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(
+            CustomUserDetailsService userDetailsService,
+            @Value("${REMEMBER_ME_KEY}") String rememberMeKey) {
         this.userDetailsService = userDetailsService;
+        if (rememberMeKey.isBlank()) {
+            throw new IllegalArgumentException("REMEMBER_ME_KEY must not be blank.");
+        }
+        this.rememberMeKey = rememberMeKey;
     }
 
     // ==============================================================
@@ -53,7 +64,7 @@ public class SecurityConfig {
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         // Ẩn thông báo "User not found" để tránh lộ thông tin hệ thống
-        provider.setHideUserNotFoundExceptions(false);
+        provider.setHideUserNotFoundExceptions(true);
         return provider;
     }
 
@@ -72,6 +83,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .csrf(Customizer.withDefaults())
+            .headers(Customizer.withDefaults())
+            .sessionManagement(session -> session
+                .sessionFixation(sessionFixation -> sessionFixation.migrateSession()))
             // ---- Cấu hình phân quyền URL ----
             .authorizeHttpRequests(auth -> auth
 
@@ -79,22 +94,35 @@ public class SecurityConfig {
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
                 // Trang đăng nhập / đăng ký / quên mật khẩu - không cần đăng nhập
-                .requestMatchers("/login", "/register", "/forgot-password/**", "/error").permitAll()
+                .requestMatchers("/login", "/register", "/forgot-password", "/forgot-password/**", "/error").permitAll()
 
                 // Xem danh sách phòng và chi tiết phòng - KHÔNG cần đăng nhập
                 // Cả khách vãng lai và USER đều xem được
-                .requestMatchers("/", "/rooms/list", "/rooms/{id}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/", "/rooms/list").permitAll()
+                .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET, "\\A/rooms/[0-9]+\\z")).permitAll()
 
                 // Khu vực ADMIN - chỉ role ADMIN
                 // Bao gồm: thêm/sửa/xóa phòng, đổi giá, quản lý user
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
 
                 // Khu vực STAFF - role STAFF và ADMIN đều vào được
                 // Bao gồm: cập nhật trạng thái phòng, xem báo cáo
-                .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
+                .requestMatchers("/staff", "/staff/**").hasAnyRole("STAFF", "ADMIN")
 
-                // Tất cả URL còn lại - phải đăng nhập (bất kỳ role nào)
-                .anyRequest().authenticated()
+                .requestMatchers("/tenants", "/tenants/**").hasAnyRole("ADMIN", "STAFF")
+
+                // Known authenticated application routes retain their current access behavior.
+                .requestMatchers(
+                    "/profile", "/profile/**",
+                    "/rooms", "/rooms/**",
+                    "/buildings", "/buildings/**",
+                    "/contracts", "/contracts/**",
+                    "/invoices", "/invoices/**",
+                    "/meter-readings", "/meter-readings/**",
+                    "/incidents", "/incidents/**",
+                    "/assets", "/assets/**").authenticated()
+
+                .anyRequest().denyAll()
             )
 
             // ---- Cấu hình trang đăng nhập ----
@@ -110,7 +138,7 @@ public class SecurityConfig {
 
             // ---- Cấu hình đăng xuất ----
             .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout")) // URL kích hoạt đăng xuất
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
                 .logoutSuccessUrl("/login?logout=true") // Sau đăng xuất -> trang login
                 .invalidateHttpSession(true)            // Xóa session hiện tại
                 .deleteCookies("JSESSIONID")            // Xóa cookie session
@@ -125,7 +153,7 @@ public class SecurityConfig {
 
             // ---- Cấu hình Remember Me (Ghi nhớ đăng nhập) ----
             .rememberMe(remember -> remember
-                .key("QLPhongTroSecretKey2026")         // Key bí mật để mã hóa token
+                .key(rememberMeKey)
                 .tokenValiditySeconds(7 * 24 * 3600)    // Token có hiệu lực 7 ngày
                 .rememberMeParameter("remember-me")     // Tên checkbox trong form login
             )

@@ -11,6 +11,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(TenantController.class)
 @Import(SecurityConfig.class)
+@TestPropertySource(properties = "REMEMBER_ME_KEY=test-only-remember-me-key")
 class TenantSecurityTest {
 
     @Autowired
@@ -34,6 +36,14 @@ class TenantSecurityTest {
     @Test
     void guestCannotViewTenantList() throws Exception {
         mockMvc.perform(get("/tenants"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    void guestCannotReachStaffOrAdminRoutes() throws Exception {
+        mockMvc.perform(get("/admin/dashboard"))
+                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/staff/dashboard"))
                 .andExpect(status().is3xxRedirection());
     }
 
@@ -72,5 +82,19 @@ class TenantSecurityTest {
                 .andExpect(status().is3xxRedirection());
 
         verify(tenantService).deleteTenant(1);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void authenticatedUserCannotAccessUnlistedRoute() throws Exception {
+        mockMvc.perform(get("/unlisted/internal-route"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void logoutCannotBeTriggeredWithGet() throws Exception {
+        mockMvc.perform(get("/logout"))
+                .andExpect(status().isForbidden());
     }
 }

@@ -16,3 +16,9 @@ scripts\mvn17.cmd clean test
 Trong PowerShell có thể dùng `.\scripts\mvn17.ps1 -v` hoặc `.\scripts\mvn17.ps1 clean test`. Nếu JDK 17 nằm ngoài các thư mục dò tự động, đặt biến `JDK17_HOME` cho phiên terminal hiện tại trước khi gọi wrapper. Nếu không tìm thấy JDK 17, wrapper in hướng dẫn cài Temurin 17 và thoát với mã lỗi.
 
 JDK 24 bị chặn có chủ đích: dự án yêu cầu JDK 17, đây là bản LTS đã khai báo làm baseline; JDK 24 không phải bản LTS và Spring Boot 3.2.5 không công bố hỗ trợ chính thức cho JDK 24. File `.java-version` cũng khai báo phiên bản yêu cầu cho các công cụ quản lý Java hỗ trợ file này.
+
+## Cấu hình bảo mật
+
+- Đặt `REMEMBER_ME_KEY` bằng một giá trị bí mật ngẫu nhiên trong môi trường chạy hoặc secret manager; ứng dụng không khởi động nếu thiếu biến này. Không đưa giá trị vào mã nguồn hoặc Git.
+- CSRF được bật cho các yêu cầu thay đổi dữ liệu. Trang công khai được allowlist rõ ràng; yêu cầu khác không khớp route đã khai báo sẽ bị từ chối.
+- Đăng nhập sai 5 lần sẽ khóa tài khoản 15 phút; đăng nhập thành công đặt lại bộ đếm.

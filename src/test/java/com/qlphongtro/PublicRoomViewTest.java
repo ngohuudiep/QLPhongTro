@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -18,10 +19,12 @@ import java.util.List;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(com.qlphongtro.controller.HomeController.class)
 @Import(SecurityConfig.class)
+@TestPropertySource(properties = "REMEMBER_ME_KEY=test-only-remember-me-key")
 class PublicRoomViewTest {
 
     @Autowired
@@ -53,6 +56,7 @@ class PublicRoomViewTest {
 
         mockMvc.perform(get("/rooms/7"))
                 .andExpect(status().isOk())
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("P107")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("UNIQUE_PRIVATE_TENANT_9f7"))))
@@ -62,5 +66,11 @@ class PublicRoomViewTest {
                         org.hamcrest.Matchers.containsString("2030-01-02"))))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("2031-02-03"))));
+    }
+
+    @Test
+    void guestCannotReachRoomManagementForm() throws Exception {
+        mockMvc.perform(get("/rooms/new"))
+                .andExpect(status().is3xxRedirection());
     }
 }
