@@ -1,5 +1,7 @@
 package com.qlphongtro;
 
+import com.qlphongtro.dto.RegisterRequest;
+import com.qlphongtro.entity.Role;
 import com.qlphongtro.entity.User;
 import com.qlphongtro.repository.RoleRepository;
 import com.qlphongtro.repository.UserRepository;
@@ -29,6 +31,7 @@ class UserServiceImplTest {
 
     private static final String IDENTIFIER = "tenant@example.com";
 
+    private RoleRepository roleRepository;
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private OtpSender otpSender;
@@ -38,7 +41,7 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        RoleRepository roleRepository = mock(RoleRepository.class);
+        roleRepository = mock(RoleRepository.class);
         passwordEncoder = new BCryptPasswordEncoder(4);
         otpSender = mock(OtpSender.class);
         userService = new UserServiceImpl(userRepository, roleRepository, passwordEncoder, otpSender);
@@ -111,5 +114,29 @@ class UserServiceImplTest {
         userService.generateResetOtp("unknown@example.com");
 
         verify(otpSender, never()).send(any(), any());
+    }
+
+    @Test
+    void publicRegistrationAlwaysAssignsUserRole() {
+        RegisterRequest request = new RegisterRequest();
+        request.setFullName("Tenant Example");
+        request.setUsername("tenant-example");
+        request.setEmail("new-tenant@example.com");
+        request.setPhone("0901234567");
+        request.setPassword("Password123");
+        request.setConfirmPassword("Password123");
+
+        Role tenantRole = new Role(2, "USER");
+        when(userRepository.existsByUsername(request.getUsername())).thenReturn(false);
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(userRepository.existsByPhone(request.getPhone())).thenReturn(false);
+        when(roleRepository.findByRoleName("USER")).thenReturn(Optional.of(tenantRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User registeredUser = userService.registerUser(request);
+
+        assertEquals("USER", registeredUser.getRole().getRoleName());
+        verify(roleRepository).findByRoleName("USER");
+        verify(roleRepository, never()).findByRoleName("ADMIN");
     }
 }

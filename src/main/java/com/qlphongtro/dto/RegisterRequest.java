@@ -39,10 +39,6 @@ public class RegisterRequest {
     @NotBlank(message = "Vui lòng nhập lại mật khẩu xác nhận")
     private String confirmPassword;
 
-    /** Vai trò lựa chọn: "ADMIN" (Chủ trọ) hoặc "USER" (Người thuê) */
-    @NotBlank(message = "Vui lòng chọn vai trò của bạn")
-    private String roleChoice = "USER";
-
     public RegisterRequest() {}
 
     // Getters and Setters
@@ -63,7 +59,4 @@ public class RegisterRequest {
 
     public String getConfirmPassword() { return confirmPassword; }
     public void setConfirmPassword(String confirmPassword) { this.confirmPassword = confirmPassword; }
-
-    public String getRoleChoice() { return roleChoice; }
-    public void setRoleChoice(String roleChoice) { this.roleChoice = roleChoice; }
 }

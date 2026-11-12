@@ -66,10 +66,9 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Số điện thoại '" + request.getPhone() + "' đã được đăng ký tài khoản khác!");
         }
 
-        // 5. Xác định vai trò: "ADMIN" (Chủ trọ) hoặc "USER" (Người thuê)
-        String targetRole = "ADMIN".equalsIgnoreCase(request.getRoleChoice()) ? "ADMIN" : "USER";
-        Role role = roleRepository.findByRoleName(targetRole)
-                .orElseGet(() -> roleRepository.save(new Role(null, targetRole)));
+        // Public registration always creates a tenant account.
+        Role role = roleRepository.findByRoleName("USER")
+                .orElseGet(() -> roleRepository.save(new Role(null, "USER")));
 
         // 6. Tạo User mới và băm mật khẩu bằng BCrypt
         User user = new User();

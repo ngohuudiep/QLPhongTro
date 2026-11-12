@@ -2,6 +2,7 @@ package com.qlphongtro;
 
 import com.qlphongtro.controller.AuthController;
 import com.qlphongtro.dto.ProfileDto;
+import com.qlphongtro.dto.RegisterRequest;
 import com.qlphongtro.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,9 +11,12 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -68,6 +72,26 @@ class AuthControllerTest {
                 .getModel().get("forgotDto");
         assertNull(dto.getOtp());
         assertFalse(result.getResponse().getContentAsString().contains("123456"));
+    }
+
+    @Test
+    void registrationIgnoresInjectedRoleChoice() throws Exception {
+        mockMvc.perform(post("/register")
+                        .param("fullName", "Tenant Example")
+                        .param("username", "tenantexample")
+                        .param("email", "tenant@example.com")
+                        .param("phone", "0901234567")
+                        .param("password", "Password123")
+                        .param("confirmPassword", "Password123")
+                        .param("roleChoice", "ADMIN"))
+                .andExpect(status().is3xxRedirection());
+
+        org.mockito.ArgumentCaptor<RegisterRequest> requestCaptor =
+                org.mockito.ArgumentCaptor.forClass(RegisterRequest.class);
+        verify(userService).registerUser(requestCaptor.capture());
+        assertEquals("tenantexample", requestCaptor.getValue().getUsername());
+        assertFalse(Arrays.stream(RegisterRequest.class.getDeclaredFields())
+                .anyMatch(field -> field.getName().equals("roleChoice")));
     }
 
     private String readForgotPasswordTemplate() throws IOException {
