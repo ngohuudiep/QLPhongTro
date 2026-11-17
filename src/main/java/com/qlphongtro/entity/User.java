@@ -49,6 +49,9 @@ public class User {
     @Column(name = "lockout_until")
     private LocalDateTime lockoutUntil;
 
+    @Column(name = "account_enabled", nullable = false, columnDefinition = "bit not null default 1")
+    private boolean accountEnabled = true;
+
     /** BCrypt hash of the password reset OTP */
     @Column(name = "reset_otp", length = 100)
     private String resetOtpHash;
@@ -109,6 +112,9 @@ public class User {
 
     public LocalDateTime getLockoutUntil() { return lockoutUntil; }
     public void setLockoutUntil(LocalDateTime lockoutUntil) { this.lockoutUntil = lockoutUntil; }
+
+    public boolean isAccountEnabled() { return accountEnabled; }
+    public void setAccountEnabled(boolean accountEnabled) { this.accountEnabled = accountEnabled; }
 
     public String getResetOtpHash() { return resetOtpHash; }
     public void setResetOtpHash(String resetOtpHash) { this.resetOtpHash = resetOtpHash; }

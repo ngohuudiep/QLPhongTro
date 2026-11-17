@@ -2,6 +2,7 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.dto.ProfileDto;
 import com.qlphongtro.dto.RegisterRequest;
+import com.qlphongtro.dto.AdminUserForm;
 import com.qlphongtro.entity.Role;
 import com.qlphongtro.entity.User;
 import com.qlphongtro.repository.RoleRepository;
@@ -13,11 +14,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -79,8 +86,97 @@ public class UserServiceImpl implements UserService {
         user.setPhone(request.getPhone().trim());
         user.setRole(role);
         user.setFailedLoginAttempts(0);
+        user.setAccountEnabled(true);
 
         return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<User> getManagedUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public User getManagedUser(Integer userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public User saveManagedUser(AdminUserForm form) {
+        String username = form.getUsername().trim();
+        String email = form.getEmail().trim();
+        String phone = form.getPhone().trim();
+        String roleName = form.getRoleName().trim().toUpperCase();
+        if (!"ADMIN".equals(roleName) && !"STAFF".equals(roleName)) {
+            throw new IllegalArgumentException("Chỉ được gán vai trò ADMIN hoặc STAFF.");
+        }
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new IllegalArgumentException("Vai trò không tồn tại."));
+
+        User user;
+        if (form.getUserId() == null) {
+            if (form.getPassword() == null || form.getPassword().length() < 8) {
+                throw new IllegalArgumentException("Mật khẩu tạo tài khoản phải có ít nhất 8 ký tự.");
+            }
+            if (userRepository.existsByUsername(username) || userRepository.existsByEmail(email)
+                    || userRepository.existsByPhone(phone)) {
+                throw new IllegalArgumentException("Tên đăng nhập, email hoặc số điện thoại đã được sử dụng.");
+            }
+            user = new User();
+            user.setUsername(username);
+            user.setPassword(passwordEncoder.encode(form.getPassword()));
+            user.setAccountEnabled(true);
+        } else {
+            user = userRepository.findById(form.getUserId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            String actor = SecurityContextHolder.getContext().getAuthentication().getName();
+            if (user.getUsername().equals(actor) && !"ADMIN".equals(roleName)) {
+                throw new AccessDeniedException("Administrators cannot lower their own role.");
+            }
+            if (!user.getUsername().equals(username) && userRepository.existsByUsername(username)
+                    || !user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmail(email)
+                    || !user.getPhone().equalsIgnoreCase(phone) && userRepository.existsByPhone(phone)) {
+                throw new IllegalArgumentException("Tên đăng nhập, email hoặc số điện thoại đã được sử dụng.");
+            }
+            user.setUsername(username);
+            if (form.getPassword() != null && !form.getPassword().isBlank()) {
+                if (form.getPassword().length() < 8) {
+                    throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự.");
+                }
+                user.setPassword(passwordEncoder.encode(form.getPassword()));
+            }
+        }
+
+        user.setFullName(form.getFullName().trim());
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setRole(role);
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void setAccountEnabled(Integer userId, boolean enabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        String actor = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!enabled && user.getUsername().equals(actor)) {
+            throw new AccessDeniedException("Administrators cannot lock their own account.");
+        }
+        user.setAccountEnabled(enabled);
+        if (enabled) {
+            user.setFailedLoginAttempts(0);
+            user.setLockoutUntil(null);
+        }
+        userRepository.save(user);
     }
 
     @Override
