@@ -2,11 +2,14 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.entity.MeterReading;
 import com.qlphongtro.repository.MeterReadingRepository;
+import com.qlphongtro.security.CurrentUser;
 import com.qlphongtro.service.MeterReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,6 +29,9 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<MeterReading> getAllReadings() {
+        if (CurrentUser.isTenant()) {
+            return meterReadingRepository.findAllForTenant(CurrentUser.username());
+        }
         return meterReadingRepository.findAll();
     }
 
@@ -33,6 +39,9 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<MeterReading> getReadingsByRoomId(Integer roomId) {
+        if (CurrentUser.isTenant()) {
+            return meterReadingRepository.findByRoomIdAndTenantUsername(roomId, CurrentUser.username());
+        }
         return meterReadingRepository.findByRoom_RoomIdOrderByBillingMonthDesc(roomId);
     }
 
@@ -40,6 +49,10 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public MeterReading getReadingById(Integer id) {
+        if (CurrentUser.isTenant()) {
+            return meterReadingRepository.findByIdAndTenantUsername(id, CurrentUser.username())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
         return meterReadingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bản ghi chỉ số ID: " + id));
     }
@@ -67,6 +80,10 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public MeterReading getReadingByRoomAndMonth(Integer roomId, LocalDate billingMonth) {
+        if (CurrentUser.isTenant()) {
+            return meterReadingRepository.findByRoomIdAndBillingMonthAndTenantUsername(roomId, billingMonth, CurrentUser.username())
+                    .orElse(null);
+        }
         return meterReadingRepository.findByRoom_RoomIdAndBillingMonth(roomId, billingMonth)
                 .orElse(null);
     }

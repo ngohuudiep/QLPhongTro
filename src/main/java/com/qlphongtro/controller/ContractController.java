@@ -5,6 +5,7 @@ import com.qlphongtro.service.ContractService;
 import com.qlphongtro.service.RoomService;
 import com.qlphongtro.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -60,6 +61,8 @@ public class ContractController {
             model.addAttribute("rooms", roomService.getAllRooms());
             model.addAttribute("tenants", tenantService.getAllTenants());
             return "contract/form";
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/contracts";

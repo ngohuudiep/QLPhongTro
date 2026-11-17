@@ -44,6 +44,10 @@ public class Tenant {
     @Column(name = "email", length = 150)
     private String email;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
+
     public Tenant() {
     }
 
@@ -112,6 +116,9 @@ public class Tenant {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
     public static class TenantBuilder {
         private Integer tenantId;

@@ -9,6 +9,8 @@ public interface TenantService {
 
     Tenant getTenantById(Integer id);
 
+    Tenant getCurrentTenant();
+
     Tenant saveTenant(Tenant tenant);
 
     void deleteTenant(Integer id);

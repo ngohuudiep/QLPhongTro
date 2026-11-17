@@ -4,6 +4,7 @@ import com.qlphongtro.entity.Invoice;
 import com.qlphongtro.entity.Payment;
 import com.qlphongtro.repository.InvoiceRepository;
 import com.qlphongtro.repository.PaymentRepository;
+import com.qlphongtro.security.CurrentUser;
 import com.qlphongtro.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,9 +29,12 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Payment> getAllPayments() {
+        if (CurrentUser.isTenant()) {
+            return paymentRepository.findAllForTenant(CurrentUser.username());
+        }
         return paymentRepository.findAll();
     }
 
@@ -38,6 +42,9 @@ public class PaymentServiceImpl implements PaymentService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Payment> getPaymentsByInvoiceId(Integer invoiceId) {
+        if (CurrentUser.isTenant()) {
+            return paymentRepository.findByInvoiceIdAndTenantUsername(invoiceId, CurrentUser.username());
+        }
         return paymentRepository.findByInvoice_InvoiceId(invoiceId);
     }
 

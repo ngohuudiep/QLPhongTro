@@ -2,11 +2,14 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.entity.*;
 import com.qlphongtro.repository.*;
+import com.qlphongtro.security.CurrentUser;
 import com.qlphongtro.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,9 +39,12 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Invoice> getAllInvoices() {
+        if (CurrentUser.isTenant()) {
+            return invoiceRepository.findAllForTenant(CurrentUser.username());
+        }
         return invoiceRepository.findAll();
     }
 
@@ -46,6 +52,10 @@ public class InvoiceServiceImpl implements InvoiceService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public Invoice getInvoiceById(Integer id) {
+        if (CurrentUser.isTenant()) {
+            return invoiceRepository.findByIdAndTenantUsername(id, CurrentUser.username())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
         return invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn ID: " + id));
     }
@@ -54,6 +64,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Invoice> getInvoicesByContractId(Integer contractId) {
+        if (CurrentUser.isTenant()) {
+            return invoiceRepository.findByContractIdAndTenantUsername(contractId, CurrentUser.username());
+        }
         return invoiceRepository.findByContract_ContractId(contractId);
     }
 
