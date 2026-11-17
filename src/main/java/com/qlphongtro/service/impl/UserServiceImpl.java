@@ -114,14 +114,17 @@ public class UserServiceImpl implements UserService {
         String email = form.getEmail().trim();
         String phone = form.getPhone().trim();
         String roleName = form.getRoleName().trim().toUpperCase();
-        if (!"ADMIN".equals(roleName) && !"STAFF".equals(roleName)) {
-            throw new IllegalArgumentException("Chỉ được gán vai trò ADMIN hoặc STAFF.");
+        if (!"ADMIN".equals(roleName) && !"STAFF".equals(roleName) && !"USER".equals(roleName)) {
+            throw new IllegalArgumentException("Vai trò không hợp lệ.");
         }
         Role role = roleRepository.findByRoleName(roleName)
                 .orElseThrow(() -> new IllegalArgumentException("Vai trò không tồn tại."));
 
         User user;
         if (form.getUserId() == null) {
+            if ("USER".equals(roleName)) {
+                throw new IllegalArgumentException("Không thể tạo tài khoản USER từ màn hình quản trị.");
+            }
             if (form.getPassword() == null || form.getPassword().length() < 8) {
                 throw new IllegalArgumentException("Mật khẩu tạo tài khoản phải có ít nhất 8 ký tự.");
             }
@@ -136,6 +139,9 @@ public class UserServiceImpl implements UserService {
         } else {
             user = userRepository.findById(form.getUserId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if ("USER".equals(roleName) && (user.getRole() == null || !"USER".equals(user.getRole().getRoleName()))) {
+                throw new IllegalArgumentException("Không thể gán vai trò USER cho tài khoản quản trị.");
+            }
             String actor = SecurityContextHolder.getContext().getAuthentication().getName();
             if (user.getUsername().equals(actor) && !"ADMIN".equals(roleName)) {
                 throw new AccessDeniedException("Administrators cannot lower their own role.");

@@ -19,6 +19,7 @@
         <label>Mật khẩu <small th:text="${form.userId == null ? '(bắt buộc, tối thiểu 8 ký tự)' : '(để trống nếu không đổi)'}"></small>
             <input class="form-control" type="password" th:field="*{password}" th:required="${form.userId == null}"></label>
         <label>Vai trò<select class="form-select" th:field="*{roleName}" required>
+            <option th:if="${form.roleName == 'USER'}" value="USER">USER (giữ nguyên)</option>
             <option value="ADMIN">ADMIN</option><option value="STAFF">STAFF</option>
         </select></label>
         <div class="d-flex gap-2">
