@@ -4,6 +4,7 @@ import com.qlphongtro.entity.*;
 import com.qlphongtro.repository.*;
 import com.qlphongtro.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +36,14 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @Transactional(readOnly = true)
     public List<Invoice> getAllInvoices() {
         return invoiceRepository.findAll();
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public Invoice getInvoiceById(Integer id) {
         return invoiceRepository.findById(id)
@@ -48,6 +51,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Invoice> getInvoicesByContractId(Integer contractId) {
         return invoiceRepository.findByContract_ContractId(contractId);
@@ -63,6 +67,7 @@ public class InvoiceServiceImpl implements InvoiceService {
      * Trả về object Invoice đã được lưu.
      */
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Invoice generateMonthlyInvoice(Integer contractId, Date month) {
         if (month == null) {
             month = new Date();
@@ -72,6 +77,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Invoice generateMonthlyInvoice(Integer contractId, LocalDate month) {
         final LocalDate targetMonth = (month != null) ? month : LocalDate.now();
 
@@ -170,11 +176,13 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Invoice saveInvoice(Invoice invoice) {
         return invoiceRepository.save(invoice);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteInvoice(Integer id) {
         if (!invoiceRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy hóa đơn ID: " + id);

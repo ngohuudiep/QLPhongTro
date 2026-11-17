@@ -4,6 +4,7 @@ import com.qlphongtro.entity.MeterReading;
 import com.qlphongtro.repository.MeterReadingRepository;
 import com.qlphongtro.service.MeterReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,18 +23,21 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<MeterReading> getAllReadings() {
         return meterReadingRepository.findAll();
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<MeterReading> getReadingsByRoomId(Integer roomId) {
         return meterReadingRepository.findByRoom_RoomIdOrderByBillingMonthDesc(roomId);
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public MeterReading getReadingById(Integer id) {
         return meterReadingRepository.findById(id)
@@ -41,6 +45,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public MeterReading recordReading(MeterReading reading) {
         // Tự động tính chỉ số tiêu thụ nếu chưa có
         if (reading.getStartIndex() != null && reading.getEndIndex() != null) {
@@ -50,6 +55,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteReading(Integer id) {
         if (!meterReadingRepository.existsById(id)) {
             throw new RuntimeException("Không thể xóa, bản ghi chỉ số không tồn tại ID: " + id);
@@ -58,6 +64,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public MeterReading getReadingByRoomAndMonth(Integer roomId, LocalDate billingMonth) {
         return meterReadingRepository.findByRoom_RoomIdAndBillingMonth(roomId, billingMonth)

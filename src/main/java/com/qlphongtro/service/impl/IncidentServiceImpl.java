@@ -4,6 +4,7 @@ import com.qlphongtro.entity.Incident;
 import com.qlphongtro.repository.IncidentRepository;
 import com.qlphongtro.service.IncidentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +23,14 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Incident> getAllIncidents() {
         return incidentRepository.findAll();
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public Incident getIncidentById(Integer id) {
         return incidentRepository.findById(id)
@@ -35,12 +38,14 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Incident> getIncidentsByRoomId(Integer roomId) {
         return incidentRepository.findByRoom_RoomId(roomId);
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Incident saveIncident(Incident incident) {
         if (incident.getReportedAt() == null) {
             incident.setReportedAt(LocalDateTime.now());
@@ -53,6 +58,7 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteIncident(Integer id) {
         if (!incidentRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy sự cố ID: " + id);

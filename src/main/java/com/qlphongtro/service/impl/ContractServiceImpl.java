@@ -7,6 +7,7 @@ import com.qlphongtro.repository.RoomRepository;
 import com.qlphongtro.repository.TenantRepository;
 import com.qlphongtro.service.ContractService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,12 +36,14 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @Transactional(readOnly = true)
     public List<Contract> getAllContracts() {
         return contractRepository.findAll();
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public Contract getContractById(Integer id) {
         return contractRepository.findById(id)
@@ -52,6 +55,7 @@ public class ContractServiceImpl implements ContractService {
      * Logic: Khi một hợp đồng mới được tạo thành công, tự động cập nhật status của Room tương ứng thành "Đang thuê" (OCCUPIED).
      */
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Contract saveContract(Contract contract) {
         boolean isNewContract = (contract.getContractId() == null);
 
@@ -72,6 +76,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteContract(Integer id) {
         Contract contract = getContractById(id);
         
@@ -89,6 +94,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public void addTenantToContract(Integer contractId, Integer tenantId, LocalDate moveInDate) {
         Contract contract = getContractById(contractId);
         Tenant tenant = tenantRepository.findById(tenantId)
@@ -106,6 +112,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public void removeTenantFromContract(Integer contractId, Integer tenantId) {
         ContractTenantId id = new ContractTenantId(contractId, tenantId);
         if (contractTenantRepository.existsById(id)) {
@@ -114,6 +121,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<ContractTenant> getTenantsByContractId(Integer contractId) {
         return contractTenantRepository.findById_ContractId(contractId);

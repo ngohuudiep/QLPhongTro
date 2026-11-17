@@ -6,6 +6,7 @@ import com.qlphongtro.repository.InvoiceRepository;
 import com.qlphongtro.repository.PaymentRepository;
 import com.qlphongtro.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +28,14 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @Transactional(readOnly = true)
     public List<Payment> getAllPayments() {
         return paymentRepository.findAll();
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Payment> getPaymentsByInvoiceId(Integer invoiceId) {
         return paymentRepository.findByInvoice_InvoiceId(invoiceId);
@@ -44,6 +47,7 @@ public class PaymentServiceImpl implements PaymentService {
      * tự động chuyển trạng thái hóa đơn thành "Đã thanh toán" (PAID).
      */
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Payment processPayment(Payment payment) {
         if (payment.getPaidAt() == null) {
             payment.setPaidAt(LocalDateTime.now());
