@@ -6,6 +6,7 @@ import com.qlphongtro.service.ContractService;
 import com.qlphongtro.service.InvoiceService;
 import com.qlphongtro.service.PaymentService;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
@@ -87,6 +88,8 @@ public class InvoiceController {
             paymentService.processPayment(payment);
             redirectAttributes.addFlashAttribute("successMessage", "Ghi nhận thanh toán thành công!");
         } catch (ResponseStatusException e) {
+            throw e;
+        } catch (AccessDeniedException e) {
             throw e;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi thanh toán: " + e.getMessage());
