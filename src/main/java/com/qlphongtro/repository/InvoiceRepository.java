@@ -25,5 +25,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
 
     List<Invoice> findByContract_ContractId(Integer contractId);
 
+    List<Invoice> findByContract_Room_Building_BuildingIdIn(List<Integer> buildingIds);
+
+    Optional<Invoice> findByInvoiceIdAndContract_Room_Building_BuildingIdIn(Integer invoiceId, List<Integer> buildingIds);
+
+    List<Invoice> findByContract_ContractIdAndContract_Room_Building_BuildingIdIn(Integer contractId, List<Integer> buildingIds);
+
     List<Invoice> findByStatus(String status);
 }

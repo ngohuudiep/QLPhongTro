@@ -1,6 +1,7 @@
 package com.qlphongtro;
 
 import com.qlphongtro.repository.*;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.impl.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,8 @@ class TenantOwnershipServiceTest {
 
     @Test
     void tenantCannotLoadAnotherTenantProfileById() {
-        TenantServiceImpl service = new TenantServiceImpl(tenantRepository, mock(ContractTenantRepository.class));
+        TenantServiceImpl service = new TenantServiceImpl(tenantRepository, mock(ContractTenantRepository.class),
+                contractRepository, mock(BuildingAccess.class));
         when(tenantRepository.findByTenantIdAndUser_Username(42, "tenant-a")).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> service.getTenantById(42));
@@ -59,7 +61,7 @@ class TenantOwnershipServiceTest {
     @Test
     void tenantCannotLoadAnotherTenantsContractById() {
         ContractServiceImpl service = new ContractServiceImpl(contractRepository, mock(ContractTenantRepository.class),
-                mock(RoomRepository.class), tenantRepository);
+                mock(RoomRepository.class), tenantRepository, mock(BuildingAccess.class));
         when(contractRepository.findByIdAndTenantUsername(17, "tenant-a")).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> service.getContractById(17));
@@ -72,7 +74,7 @@ class TenantOwnershipServiceTest {
     @Test
     void tenantCannotLoadAnotherTenantsInvoiceById() {
         InvoiceServiceImpl service = new InvoiceServiceImpl(invoiceRepository, contractRepository,
-                meterReadingRepository, mock(RoomServiceRepository.class));
+                meterReadingRepository, mock(RoomServiceRepository.class), mock(BuildingAccess.class));
         when(invoiceRepository.findByIdAndTenantUsername(23, "tenant-a")).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> service.getInvoiceById(23));
@@ -84,7 +86,7 @@ class TenantOwnershipServiceTest {
 
     @Test
     void tenantInvoicePaymentListUsesPrincipalScopedQuery() {
-        PaymentServiceImpl service = new PaymentServiceImpl(paymentRepository, invoiceRepository);
+        PaymentServiceImpl service = new PaymentServiceImpl(paymentRepository, invoiceRepository, mock(BuildingAccess.class));
         when(paymentRepository.findByInvoiceIdAndTenantUsername(29, "tenant-a")).thenReturn(List.of());
 
         service.getPaymentsByInvoiceId(29);
@@ -95,7 +97,7 @@ class TenantOwnershipServiceTest {
 
     @Test
     void tenantCannotLoadAnotherTenantsMeterReadingById() {
-        MeterReadingServiceImpl service = new MeterReadingServiceImpl(meterReadingRepository);
+        MeterReadingServiceImpl service = new MeterReadingServiceImpl(meterReadingRepository, mock(BuildingAccess.class));
         when(meterReadingRepository.findByIdAndTenantUsername(31, "tenant-a")).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> service.getReadingById(31));
@@ -107,7 +109,7 @@ class TenantOwnershipServiceTest {
 
     @Test
     void tenantCannotLoadAnotherTenantsIncidentById() {
-        IncidentServiceImpl service = new IncidentServiceImpl(incidentRepository, tenantRepository, contractRepository);
+        IncidentServiceImpl service = new IncidentServiceImpl(incidentRepository, tenantRepository, contractRepository, mock(BuildingAccess.class));
         when(incidentRepository.findByIdAndTenantUsername(37, "tenant-a")).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> service.getIncidentById(37));

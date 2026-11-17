@@ -6,6 +6,7 @@ import com.qlphongtro.repository.ContractTenantRepository;
 import com.qlphongtro.repository.RoomRepository;
 import com.qlphongtro.repository.TenantRepository;
 import com.qlphongtro.security.CurrentUser;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.ContractService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,17 +26,20 @@ public class ContractServiceImpl implements ContractService {
     private final ContractTenantRepository contractTenantRepository;
     private final RoomRepository roomRepository;
     private final TenantRepository tenantRepository;
+    private final BuildingAccess buildingAccess;
 
     @Autowired
     public ContractServiceImpl(
             ContractRepository contractRepository,
             ContractTenantRepository contractTenantRepository,
             RoomRepository roomRepository,
-            TenantRepository tenantRepository) {
+            TenantRepository tenantRepository,
+            BuildingAccess buildingAccess) {
         this.contractRepository = contractRepository;
         this.contractTenantRepository = contractTenantRepository;
         this.roomRepository = roomRepository;
         this.tenantRepository = tenantRepository;
+        this.buildingAccess = buildingAccess;
     }
 
     @Override
@@ -44,6 +48,10 @@ public class ContractServiceImpl implements ContractService {
     public List<Contract> getAllContracts() {
         if (CurrentUser.isTenant()) {
             return contractRepository.findAllForTenant(CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : contractRepository.findDistinctByRoom_Building_BuildingIdIn(buildingIds);
         }
         return contractRepository.findAll();
     }
@@ -54,6 +62,14 @@ public class ContractServiceImpl implements ContractService {
     public Contract getContractById(Integer id) {
         if (CurrentUser.isTenant()) {
             return contractRepository.findByIdAndTenantUsername(id, CurrentUser.username())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            if (buildingIds.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+            return contractRepository.findByContractIdAndRoom_Building_BuildingIdIn(id, buildingIds)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
         return contractRepository.findById(id)
@@ -67,6 +83,12 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Contract saveContract(Contract contract) {
+        if (buildingAccess.isStaff()) {
+            if (contract.getContractId() != null) {
+                getContractById(contract.getContractId());
+            }
+            buildingAccess.requireRoom(contract.getRoom());
+        }
         boolean isNewContract = (contract.getContractId() == null);
 
         // Lưu hợp đồng vào database
@@ -124,6 +146,7 @@ public class ContractServiceImpl implements ContractService {
     @Override
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public void removeTenantFromContract(Integer contractId, Integer tenantId) {
+        getContractById(contractId);
         ContractTenantId id = new ContractTenantId(contractId, tenantId);
         if (contractTenantRepository.existsById(id)) {
             contractTenantRepository.deleteById(id);
@@ -134,6 +157,9 @@ public class ContractServiceImpl implements ContractService {
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<ContractTenant> getTenantsByContractId(Integer contractId) {
+        if (!CurrentUser.isTenant()) {
+            getContractById(contractId);
+        }
         if (CurrentUser.isTenant()) {
             return contractTenantRepository.findById_ContractIdAndTenant_User_Username(contractId, CurrentUser.username());
         }

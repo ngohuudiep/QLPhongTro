@@ -4,6 +4,8 @@ import com.qlphongtro.entity.Room;
 import com.qlphongtro.service.BuildingService;
 import com.qlphongtro.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,7 @@ public class RoomController {
 
     // 2. Hiển thị form thêm mới phòng
     @GetMapping("/new")
+    @PreAuthorize("hasRole('ADMIN')")
     public String showCreateForm(Model model) {
         model.addAttribute("room", new Room());
         model.addAttribute("buildings", buildingService.getAllBuildings());
@@ -39,12 +42,15 @@ public class RoomController {
 
     // 3. Hiển thị form chỉnh sửa phòng
     @GetMapping("/edit/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public String showEditForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Room room = roomService.getRoomById(id);
             model.addAttribute("room", room);
             model.addAttribute("buildings", buildingService.getAllBuildings());
             return "room/form";
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/rooms";
@@ -53,6 +59,7 @@ public class RoomController {
 
     // 4. Lưu thông tin phòng (Thêm mới hoặc Cập nhật)
     @PostMapping("/save")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public String saveRoom(@ModelAttribute("room") Room room, RedirectAttributes redirectAttributes) {
         try {
             roomService.saveRoom(room);
@@ -65,6 +72,7 @@ public class RoomController {
 
     // 5. Xóa phòng
     @GetMapping("/delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String deleteRoom(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
             roomService.deleteRoom(id);

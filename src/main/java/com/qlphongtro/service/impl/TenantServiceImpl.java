@@ -2,8 +2,10 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.entity.Tenant;
 import com.qlphongtro.repository.ContractTenantRepository;
+import com.qlphongtro.repository.ContractRepository;
 import com.qlphongtro.repository.TenantRepository;
 import com.qlphongtro.security.CurrentUser;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,13 +22,19 @@ public class TenantServiceImpl implements TenantService {
 
     private final TenantRepository tenantRepository;
     private final ContractTenantRepository contractTenantRepository;
+    private final ContractRepository contractRepository;
+    private final BuildingAccess buildingAccess;
 
     @Autowired
     public TenantServiceImpl(
             TenantRepository tenantRepository,
-            ContractTenantRepository contractTenantRepository) {
+            ContractTenantRepository contractTenantRepository,
+            ContractRepository contractRepository,
+            BuildingAccess buildingAccess) {
         this.tenantRepository = tenantRepository;
         this.contractTenantRepository = contractTenantRepository;
+        this.contractRepository = contractRepository;
+        this.buildingAccess = buildingAccess;
     }
 
     @Override
@@ -35,6 +43,9 @@ public class TenantServiceImpl implements TenantService {
     public List<Tenant> getAllTenants() {
         if (CurrentUser.isTenant()) {
             return tenantRepository.findByUser_Username(CurrentUser.username()).stream().toList();
+        }
+        if (buildingAccess.isStaff()) {
+            return getTenantsInAssignedBuildings();
         }
         return tenantRepository.findAll();
     }
@@ -45,6 +56,12 @@ public class TenantServiceImpl implements TenantService {
     public Tenant getTenantById(Integer id) {
         if (CurrentUser.isTenant()) {
             return tenantRepository.findByTenantIdAndUser_Username(id, CurrentUser.username())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
+        if (buildingAccess.isStaff()) {
+            return getTenantsInAssignedBuildings().stream()
+                    .filter(tenant -> id.equals(tenant.getTenantId()))
+                    .findFirst()
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
         return tenantRepository.findById(id)
@@ -62,6 +79,12 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Tenant saveTenant(Tenant tenant) {
+        if (buildingAccess.isStaff()) {
+            if (tenant.getTenantId() == null) {
+                throw new org.springframework.security.access.AccessDeniedException("Staff cannot create an unassigned tenant profile.");
+            }
+            getTenantById(tenant.getTenantId());
+        }
         return tenantRepository.save(tenant);
     }
 
@@ -98,6 +121,13 @@ public class TenantServiceImpl implements TenantService {
                     || (tenant.getPhone() != null && tenant.getPhone().toLowerCase().contains(term));
             return matches ? List.of(tenant) : List.of();
         }
+        if (buildingAccess.isStaff()) {
+            String term = keyword == null ? "" : keyword.trim().toLowerCase();
+            return getTenantsInAssignedBuildings().stream().filter(tenant -> term.isEmpty()
+                    || (tenant.getFullName() != null && tenant.getFullName().toLowerCase().contains(term))
+                    || (tenant.getIdNumber() != null && tenant.getIdNumber().toLowerCase().contains(term))
+                    || (tenant.getPhone() != null && tenant.getPhone().contains(term))).toList();
+        }
         if (keyword == null || keyword.trim().isEmpty()) {
             return tenantRepository.findAll();
         }
@@ -105,5 +135,19 @@ public class TenantServiceImpl implements TenantService {
         return tenantRepository.findByFullNameContainingIgnoreCaseOrIdNumberContainingOrPhoneContaining(
                 cleanKeyword, cleanKeyword, cleanKeyword
         );
+    }
+
+    private List<Tenant> getTenantsInAssignedBuildings() {
+        List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+        if (buildingIds.isEmpty()) {
+            return List.of();
+        }
+        return contractRepository.findDistinctByRoom_Building_BuildingIdIn(buildingIds).stream()
+                .flatMap(contract -> java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(contract.getRepresentative()),
+                        contract.getContractTenants().stream().map(link -> link.getTenant())))
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toMap(Tenant::getTenantId, tenant -> tenant, (first, ignored) -> first))
+                .values().stream().toList();
     }
 }

@@ -19,6 +19,14 @@ public interface MeterReadingRepository extends JpaRepository<MeterReading, Inte
     // Tìm chỉ số của phòng theo tháng cụ thể
     Optional<MeterReading> findByRoom_RoomIdAndBillingMonth(Integer roomId, LocalDate billingMonth);
 
+    List<MeterReading> findByRoom_Building_BuildingIdIn(List<Integer> buildingIds);
+
+    Optional<MeterReading> findByReadingIdAndRoom_Building_BuildingIdIn(Integer readingId, List<Integer> buildingIds);
+
+    List<MeterReading> findByRoom_RoomIdAndRoom_Building_BuildingIdIn(Integer roomId, List<Integer> buildingIds);
+
+    Optional<MeterReading> findByRoom_RoomIdAndBillingMonthAndRoom_Building_BuildingIdIn(Integer roomId, LocalDate billingMonth, List<Integer> buildingIds);
+
     @Query("select mr from MeterReading mr where exists (select c.contractId from Contract c left join c.representative rep left join rep.user ru left join c.contractTenants ct left join ct.tenant t left join t.user tu where c.room = mr.room and (ru.username = :username or tu.username = :username))")
     List<MeterReading> findAllForTenant(@Param("username") String username);
 

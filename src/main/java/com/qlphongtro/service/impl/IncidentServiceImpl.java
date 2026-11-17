@@ -6,6 +6,7 @@ import com.qlphongtro.repository.ContractRepository;
 import com.qlphongtro.repository.IncidentRepository;
 import com.qlphongtro.repository.TenantRepository;
 import com.qlphongtro.security.CurrentUser;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.IncidentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,13 +25,15 @@ public class IncidentServiceImpl implements IncidentService {
     private final IncidentRepository incidentRepository;
     private final TenantRepository tenantRepository;
     private final ContractRepository contractRepository;
+    private final BuildingAccess buildingAccess;
 
     @Autowired
     public IncidentServiceImpl(IncidentRepository incidentRepository, TenantRepository tenantRepository,
-                               ContractRepository contractRepository) {
+                               ContractRepository contractRepository, BuildingAccess buildingAccess) {
         this.incidentRepository = incidentRepository;
         this.tenantRepository = tenantRepository;
         this.contractRepository = contractRepository;
+        this.buildingAccess = buildingAccess;
     }
 
     @Override
@@ -39,6 +42,10 @@ public class IncidentServiceImpl implements IncidentService {
     public List<Incident> getAllIncidents() {
         if (CurrentUser.isTenant()) {
             return incidentRepository.findAllForTenant(CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : incidentRepository.findByRoom_Building_BuildingIdIn(buildingIds);
         }
         return incidentRepository.findAll();
     }
@@ -51,6 +58,14 @@ public class IncidentServiceImpl implements IncidentService {
             return incidentRepository.findByIdAndTenantUsername(id, CurrentUser.username())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            if (buildingIds.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+            return incidentRepository.findByIncidentIdAndRoom_Building_BuildingIdIn(id, buildingIds)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
         return incidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sự cố ID: " + id));
     }
@@ -61,6 +76,10 @@ public class IncidentServiceImpl implements IncidentService {
     public List<Incident> getIncidentsByRoomId(Integer roomId) {
         if (CurrentUser.isTenant()) {
             return incidentRepository.findByRoomIdAndTenantUsername(roomId, CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : incidentRepository.findByRoom_RoomIdAndRoom_Building_BuildingIdIn(roomId, buildingIds);
         }
         return incidentRepository.findByRoom_RoomId(roomId);
     }
@@ -89,6 +108,14 @@ public class IncidentServiceImpl implements IncidentService {
                 incident.setStatus(existing.getStatus());
                 incident.setResolvedAt(existing.getResolvedAt());
                 incident.setReportedAt(existing.getReportedAt());
+            }
+        }
+        if (buildingAccess.isStaff()) {
+            buildingAccess.requireRoom(incident.getRoom());
+            if (incident.getIncidentId() != null) {
+                Incident existing = getIncidentById(incident.getIncidentId());
+                incident.setRoom(existing.getRoom());
+                incident.setReportedBy(existing.getReportedBy());
             }
         }
         if (incident.getReportedAt() == null) {

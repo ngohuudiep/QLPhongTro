@@ -16,4 +16,10 @@ public final class CurrentUser {
         return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_USER".equals(authority.getAuthority()));
     }
+
+    public static boolean hasRole(String role) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> ("ROLE_" + role).equals(authority.getAuthority()));
+    }
 }

@@ -3,6 +3,7 @@ package com.qlphongtro.controller;
 import com.qlphongtro.entity.Building;
 import com.qlphongtro.service.BuildingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +11,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/buildings")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
 public class BuildingController {
 
     private final BuildingService buildingService;
@@ -28,6 +30,7 @@ public class BuildingController {
 
     // 2. Hiển thị form thêm mới tòa nhà
     @GetMapping("/new")
+    @PreAuthorize("hasRole('ADMIN')")
     public String showCreateForm(Model model) {
         model.addAttribute("building", new Building());
         return "building/form";
@@ -35,6 +38,7 @@ public class BuildingController {
 
     // 3. Hiển thị form chỉnh sửa tòa nhà
     @GetMapping("/edit/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String showEditForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Building building = buildingService.getBuildingById(id);
@@ -48,6 +52,7 @@ public class BuildingController {
 
     // 4. Lưu tòa nhà (Dùng chung cho cả thêm mới và cập nhật)
     @PostMapping("/save")
+    @PreAuthorize("hasRole('ADMIN')")
     public String saveBuilding(@ModelAttribute("building") Building building, RedirectAttributes redirectAttributes) {
         try {
             buildingService.saveBuilding(building);
@@ -60,6 +65,7 @@ public class BuildingController {
 
     // 5. Xóa tòa nhà theo ID
     @GetMapping("/delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String deleteBuilding(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
             buildingService.deleteBuilding(id);

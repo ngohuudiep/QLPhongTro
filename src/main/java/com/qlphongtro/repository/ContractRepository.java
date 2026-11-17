@@ -18,6 +18,10 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
 
     List<Contract> findByRoom_RoomId(Integer roomId);
 
+    List<Contract> findDistinctByRoom_Building_BuildingIdIn(List<Integer> buildingIds);
+
+    Optional<Contract> findByContractIdAndRoom_Building_BuildingIdIn(Integer contractId, List<Integer> buildingIds);
+
     List<Contract> findByRepresentative_TenantId(Integer representativeId);
 
     @Query("select distinct c from Contract c left join c.representative rep left join rep.user ru left join c.contractTenants ct left join ct.tenant t left join t.user tu where ru.username = :username or tu.username = :username")

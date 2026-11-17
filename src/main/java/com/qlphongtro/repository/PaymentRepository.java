@@ -14,6 +14,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     List<Payment> findByInvoice_InvoiceId(Integer invoiceId);
 
+    List<Payment> findByInvoice_Contract_Room_Building_BuildingIdIn(List<Integer> buildingIds);
+
+    List<Payment> findByInvoice_InvoiceIdAndInvoice_Contract_Room_Building_BuildingIdIn(Integer invoiceId, List<Integer> buildingIds);
+
     @Query("select distinct p from Payment p left join p.invoice i left join i.contract c left join c.representative rep left join rep.user ru left join c.contractTenants ct left join ct.tenant t left join t.user tu where ru.username = :username or tu.username = :username")
     List<Payment> findAllForTenant(@Param("username") String username);
 

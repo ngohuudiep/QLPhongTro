@@ -5,6 +5,7 @@ import com.qlphongtro.entity.Payment;
 import com.qlphongtro.repository.InvoiceRepository;
 import com.qlphongtro.repository.PaymentRepository;
 import com.qlphongtro.security.CurrentUser;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.PaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,11 +22,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
+    private final BuildingAccess buildingAccess;
 
     @Autowired
-    public PaymentServiceImpl(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository, BuildingAccess buildingAccess) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
+        this.buildingAccess = buildingAccess;
     }
 
     @Override
@@ -34,6 +37,10 @@ public class PaymentServiceImpl implements PaymentService {
     public List<Payment> getAllPayments() {
         if (CurrentUser.isTenant()) {
             return paymentRepository.findAllForTenant(CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : paymentRepository.findByInvoice_Contract_Room_Building_BuildingIdIn(buildingIds);
         }
         return paymentRepository.findAll();
     }
@@ -44,6 +51,10 @@ public class PaymentServiceImpl implements PaymentService {
     public List<Payment> getPaymentsByInvoiceId(Integer invoiceId) {
         if (CurrentUser.isTenant()) {
             return paymentRepository.findByInvoiceIdAndTenantUsername(invoiceId, CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : paymentRepository.findByInvoice_InvoiceIdAndInvoice_Contract_Room_Building_BuildingIdIn(invoiceId, buildingIds);
         }
         return paymentRepository.findByInvoice_InvoiceId(invoiceId);
     }
@@ -56,6 +67,17 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Payment processPayment(Payment payment) {
+        if (buildingAccess.isStaff()) {
+            Integer invoiceId = payment.getInvoice() == null ? null : payment.getInvoice().getInvoiceId();
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            if (invoiceId == null || buildingIds.isEmpty()) {
+                throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND);
+            }
+            Invoice scopedInvoice = invoiceRepository.findByInvoiceIdAndContract_Room_Building_BuildingIdIn(
+                            invoiceId, buildingIds)
+                    .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
+            payment.setInvoice(scopedInvoice);
+        }
         if (payment.getPaidAt() == null) {
             payment.setPaidAt(LocalDateTime.now());
         }

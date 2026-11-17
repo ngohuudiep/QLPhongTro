@@ -14,6 +14,12 @@ public interface IncidentRepository extends JpaRepository<Incident, Integer> {
 
     List<Incident> findByRoom_RoomId(Integer roomId);
 
+    List<Incident> findByRoom_Building_BuildingIdIn(List<Integer> buildingIds);
+
+    Optional<Incident> findByIncidentIdAndRoom_Building_BuildingIdIn(Integer incidentId, List<Integer> buildingIds);
+
+    List<Incident> findByRoom_RoomIdAndRoom_Building_BuildingIdIn(Integer roomId, List<Integer> buildingIds);
+
     @Query("select i from Incident i where i.reportedBy.user.username = :username")
     List<Incident> findAllForTenant(@Param("username") String username);
 

@@ -2,6 +2,8 @@ package com.qlphongtro;
 
 import com.qlphongtro.repository.ContractTenantRepository;
 import com.qlphongtro.repository.TenantRepository;
+import com.qlphongtro.repository.ContractRepository;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.impl.TenantServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +24,8 @@ class TenantServiceImplTest {
     void setUp() {
         tenantRepository = mock(TenantRepository.class);
         contractTenantRepository = mock(ContractTenantRepository.class);
-        tenantService = new TenantServiceImpl(tenantRepository, contractTenantRepository);
+        tenantService = new TenantServiceImpl(tenantRepository, contractTenantRepository,
+                mock(ContractRepository.class), mock(BuildingAccess.class));
     }
 
     @Test
