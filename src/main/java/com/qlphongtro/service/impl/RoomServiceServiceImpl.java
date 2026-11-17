@@ -6,6 +6,7 @@ import com.qlphongtro.service.RoomServiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -34,11 +35,13 @@ public class RoomServiceServiceImpl implements RoomServiceService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public RoomService assignServiceToRoom(RoomService roomService) {
         return roomServiceRepository.save(roomService);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void removeServiceFromRoom(Integer priceId) {
         if (!roomServiceRepository.existsById(priceId)) {
             throw new RuntimeException("Không thể xóa, cấu hình giá dịch vụ không tồn tại ID: " + priceId);

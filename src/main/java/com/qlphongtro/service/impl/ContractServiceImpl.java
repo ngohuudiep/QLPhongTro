@@ -108,7 +108,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("denyAll()")
     public void deleteContract(Integer id) {
         Contract contract = getContractById(id);
         

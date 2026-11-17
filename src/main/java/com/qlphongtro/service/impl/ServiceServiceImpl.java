@@ -5,6 +5,7 @@ import com.qlphongtro.repository.ServiceRepository;
 import com.qlphongtro.service.ServiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -33,11 +34,13 @@ public class ServiceServiceImpl implements ServiceService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public Service saveService(Service service) {
         return serviceRepository.save(service);
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteService(Integer id) {
         if (!serviceRepository.existsById(id)) {
             throw new RuntimeException("Không thể xóa, dịch vụ không tồn tại ID: " + id);

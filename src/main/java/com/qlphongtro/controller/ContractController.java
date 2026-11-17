@@ -91,7 +91,7 @@ public class ContractController {
 
     // 5. Xóa hợp đồng
     @GetMapping("/delete/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("denyAll()")
     public String deleteContract(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
             contractService.deleteContract(id);

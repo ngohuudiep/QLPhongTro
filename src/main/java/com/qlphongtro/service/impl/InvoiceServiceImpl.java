@@ -224,7 +224,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("denyAll()")
     public void deleteInvoice(Integer id) {
         if (!invoiceRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy hóa đơn ID: " + id);
