@@ -30,7 +30,7 @@ jobs:
           cache: maven
 
       - name: Verify with Maven
-        run: mvn -B clean verify
+        run: mvn -B -Dmaven.wagon.http.retryHandler.count=5 -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 clean verify
 
       - name: Upload Surefire reports on failure
         if: failure()
