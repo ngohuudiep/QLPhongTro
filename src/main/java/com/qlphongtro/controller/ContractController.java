@@ -5,6 +5,7 @@ import com.qlphongtro.service.ContractService;
 import com.qlphongtro.service.RoomService;
 import com.qlphongtro.service.TenantService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -90,6 +91,7 @@ public class ContractController {
 
     // 5. Xóa hợp đồng
     @GetMapping("/delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String deleteContract(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
         try {
             contractService.deleteContract(id);

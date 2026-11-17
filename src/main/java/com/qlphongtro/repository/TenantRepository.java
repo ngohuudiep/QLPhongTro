@@ -23,6 +23,8 @@ public interface TenantRepository extends JpaRepository<Tenant, Integer> {
 
     Optional<Tenant> findByTenantIdAndUser_Username(Integer tenantId, String username);
 
+    boolean existsByUser_UserId(Integer userId);
+
     // Tìm kiếm khách thuê theo tên hoặc số CCCD hoặc SĐT
     List<Tenant> findByFullNameContainingIgnoreCaseOrIdNumberContainingOrPhoneContaining(
             String fullName, String idNumber, String phone

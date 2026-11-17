@@ -4,6 +4,8 @@ import com.qlphongtro.entity.Tenant;
 import com.qlphongtro.repository.ContractTenantRepository;
 import com.qlphongtro.repository.ContractRepository;
 import com.qlphongtro.repository.TenantRepository;
+import com.qlphongtro.repository.UserRepository;
+import com.qlphongtro.entity.User;
 import com.qlphongtro.security.CurrentUser;
 import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.TenantService;
@@ -24,17 +26,27 @@ public class TenantServiceImpl implements TenantService {
     private final ContractTenantRepository contractTenantRepository;
     private final ContractRepository contractRepository;
     private final BuildingAccess buildingAccess;
+    private final UserRepository userRepository;
 
     @Autowired
     public TenantServiceImpl(
             TenantRepository tenantRepository,
             ContractTenantRepository contractTenantRepository,
             ContractRepository contractRepository,
-            BuildingAccess buildingAccess) {
+            BuildingAccess buildingAccess,
+            UserRepository userRepository) {
         this.tenantRepository = tenantRepository;
         this.contractTenantRepository = contractTenantRepository;
         this.contractRepository = contractRepository;
         this.buildingAccess = buildingAccess;
+        this.userRepository = userRepository;
+    }
+
+    public TenantServiceImpl(TenantRepository tenantRepository,
+            ContractTenantRepository contractTenantRepository,
+            ContractRepository contractRepository,
+            BuildingAccess buildingAccess) {
+        this(tenantRepository, contractTenantRepository, contractRepository, buildingAccess, null);
     }
 
     @Override
@@ -79,13 +91,48 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Tenant saveTenant(Tenant tenant) {
+        if (tenant.getTenantId() == null && !org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()))) {
+            throw new org.springframework.security.access.AccessDeniedException("Only administrators can create tenant profiles.");
+        }
         if (buildingAccess.isStaff()) {
             if (tenant.getTenantId() == null) {
                 throw new org.springframework.security.access.AccessDeniedException("Staff cannot create an unassigned tenant profile.");
             }
             getTenantById(tenant.getTenantId());
         }
+        if (tenant.getTenantId() != null) {
+            Tenant stored = tenantRepository.findById(tenant.getTenantId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            tenant.setUser(stored.getUser());
+        } else {
+            tenant.setUser(null);
+        }
         return tenantRepository.save(tenant);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public List<User> getUnlinkedUserAccounts() {
+        return userRepository.findByRole_RoleName("USER").stream()
+                .filter(user -> !tenantRepository.existsByUser_UserId(user.getUserId()))
+                .toList();
+    }
+
+    @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public void linkUserAccount(Integer tenantId, Integer userId) {
+        Tenant tenant = getTenantById(tenantId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (user.getRole() == null || !"USER".equals(user.getRole().getRoleName())
+                || tenantRepository.existsByUser_UserId(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        tenant.setUser(user);
+        tenantRepository.save(tenant);
     }
 
     @Override
