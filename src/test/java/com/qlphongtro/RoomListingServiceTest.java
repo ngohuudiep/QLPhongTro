@@ -7,10 +7,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -31,13 +33,17 @@ public class RoomListingServiceTest {
     @Mock
     private com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator;
 
-    @InjectMocks
+    @Mock
+    private Environment environment;
+
     private RoomListingServiceImpl roomListingService;
 
     private List<RoomListing> sampleRooms;
 
     @BeforeEach
     void setUp() {
+        roomListingService = new RoomListingServiceImpl(
+                roomListingRepository, databaseUnicodeMigrator, environment, false);
         sampleRooms = new ArrayList<>();
         // Tạo 14 phòng mẫu tương tự trong hệ thống
         for (int i = 1; i <= 14; i++) {
@@ -56,6 +62,27 @@ public class RoomListingServiceTest {
             }
             sampleRooms.add(r);
         }
+    }
+
+    @Test
+    @DisplayName("Không seed phòng demo khi không bật cờ và không ở profile dev")
+    void initDoesNotSeedDemoRoomsByDefault() {
+        when(environment.acceptsProfiles(any(Profiles.class))).thenReturn(false);
+        roomListingService.init();
+
+        verify(databaseUnicodeMigrator).migrateIfNeeded();
+        verify(roomListingRepository, never()).save(any(RoomListing.class));
+    }
+
+    @Test
+    @DisplayName("Có thể bật seed phòng demo bằng cờ cấu hình")
+    void initSeedsDemoRoomsWhenExplicitlyEnabled() {
+        ReflectionTestUtils.setField(roomListingService, "demoRoomSeedEnabled", true);
+        when(roomListingRepository.count()).thenReturn(0L);
+
+        roomListingService.init();
+
+        verify(roomListingRepository, times(14)).save(any(RoomListing.class));
     }
 
     @Test
