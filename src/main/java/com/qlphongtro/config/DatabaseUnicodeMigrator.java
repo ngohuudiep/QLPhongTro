@@ -3,6 +3,7 @@ package com.qlphongtro.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -20,13 +21,22 @@ public class DatabaseUnicodeMigrator {
     private static final Logger log = LoggerFactory.getLogger(DatabaseUnicodeMigrator.class);
 
     private final DataSource dataSource;
+    private final boolean enabled;
 
     @Autowired
-    public DatabaseUnicodeMigrator(DataSource dataSource) {
+    public DatabaseUnicodeMigrator(
+            DataSource dataSource,
+            @Value("${app.db.unicode-migration.enabled:false}") boolean enabled) {
         this.dataSource = dataSource;
+        this.enabled = enabled;
     }
 
     public synchronized void migrateIfNeeded() {
+        if (!enabled) {
+            log.info("[DB MIGRATION] Unicode schema migration disabled.");
+            return;
+        }
+
         try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
             log.info("[DB MIGRATION] Bắt đầu kiểm tra schema SQL Server cho ApartmentDB...");
 
@@ -59,34 +69,6 @@ public class DatabaseUnicodeMigrator {
 
             // 3. Kiểm tra và ALTER bảng BookingRequests (note)
             executeQuietly(stmt, "ALTER TABLE BookingRequests ALTER COLUMN note NVARCHAR(500)");
-
-            // 4. Kiểm tra xem dữ liệu trong RoomListings có bị dấu '?' hoặc rỗng hoặc lệch ID không
-            boolean hasCorruptedData = false;
-            int roomCount = 0;
-            try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM RoomListings")) {
-                if (rs.next()) {
-                    roomCount = rs.getInt(1);
-                }
-            } catch (Exception ignored) {}
-
-            if (roomCount > 0) {
-                try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM RoomListings WHERE title LIKE '%?%' OR amenities LIKE '%?%'")) {
-                    if (rs.next() && rs.getInt(1) > 0) {
-                        hasCorruptedData = true;
-                    }
-                } catch (Exception ignored) {}
-            }
-
-            // Nếu bảng rỗng, hoặc chứa ký tự '?' do seed cũ bằng VARCHAR, hoặc không đủ 14 phòng
-            if (hasCorruptedData || roomCount != 14) {
-                log.info("[DB MIGRATION] Dữ liệu RoomListings hiện có: {} phòng (có dấu '?' hoặc chưa đủ 14). Tiến hành làm sạch và reset IDENTITY...", roomCount);
-                executeQuietly(stmt, "DELETE FROM BookingRequests");
-                executeQuietly(stmt, "DELETE FROM RoomListings");
-                executeQuietly(stmt, "DBCC CHECKIDENT ('RoomListings', RESEED, 0)");
-                log.info("[DB MIGRATION] Đã reset IDENTITY ('RoomListings') về 0. Sẵn sàng cho seed 14 phòng chuẩn.");
-            } else {
-                log.info("[DB MIGRATION] Dữ liệu RoomListings đã có đủ {} phòng chuẩn.", roomCount);
-            }
 
         } catch (Exception e) {
             log.error("[DB MIGRATION] Lỗi kết nối khi chạy auto-migration: {}", e.getMessage());
