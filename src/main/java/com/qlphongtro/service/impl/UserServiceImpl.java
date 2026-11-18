@@ -146,6 +146,9 @@ public class UserServiceImpl implements UserService {
             if (user.getUsername().equals(actor) && !"ADMIN".equals(roleName)) {
                 throw new AccessDeniedException("Administrators cannot lower their own role.");
             }
+            if (!"ADMIN".equals(roleName)) {
+                preventRemovingLastActiveAdmin(user);
+            }
             if (!user.getUsername().equals(username) && userRepository.existsByUsername(username)
                     || !user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmail(email)
                     || !user.getPhone().equalsIgnoreCase(phone) && userRepository.existsByPhone(phone)) {
@@ -177,12 +180,23 @@ public class UserServiceImpl implements UserService {
         if (!enabled && user.getUsername().equals(actor)) {
             throw new AccessDeniedException("Administrators cannot lock their own account.");
         }
+        if (!enabled) {
+            preventRemovingLastActiveAdmin(user);
+        }
         user.setAccountEnabled(enabled);
         if (enabled) {
             user.setFailedLoginAttempts(0);
             user.setLockoutUntil(null);
         }
         userRepository.save(user);
+    }
+
+    private void preventRemovingLastActiveAdmin(User user) {
+        if (user.isAccountEnabled() && user.getRole() != null
+                && "ADMIN".equals(user.getRole().getRoleName())
+                && userRepository.findActiveAdministratorsForUpdate().size() <= 1) {
+            throw new AccessDeniedException("Cannot deactivate or demote the last active administrator.");
+        }
     }
 
     @Override

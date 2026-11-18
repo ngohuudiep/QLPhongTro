@@ -46,4 +46,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     List<User> findByRole_RoleId(Integer roleId);
 
     List<User> findByRole_RoleName(String roleName);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.role.roleName = 'ADMIN' AND u.accountEnabled = true ORDER BY u.userId")
+    List<User> findActiveAdministratorsForUpdate();
 }
