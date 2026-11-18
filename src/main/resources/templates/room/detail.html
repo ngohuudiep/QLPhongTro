@@ -123,24 +123,6 @@
                             Phòng đầy đủ nội thất cao cấp: máy lạnh Inverter, tủ lạnh 2 cánh, giường nệm cao su, tủ quần áo âm tường. Ban công đón ánh sáng tự nhiên.
                         </p>
 
-                        <!-- Rental Info / Tenant History (Nếu phòng đã thuê hoặc người xem là Admin/Chủ trọ) -->
-                        <div th:if="${room.status == 'DA_THUE' || #authorization.expression('hasRole(''ADMIN'')')}" class="p-3 border rounded-3 bg-light mt-4">
-                            <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Thông tin hợp đồng & Người đang thuê</h6>
-                            <div class="row g-2 small text-muted">
-                                <div class="col-md-6">
-                                    <span>Người đang thuê:</span> <strong class="text-dark" th:text="${room.currentTenant != null ? room.currentTenant : 'Chưa có thông tin'}">Trần Hoàng Nam</strong>
-                                </div>
-                                <div class="col-md-6" sec:authorize="hasRole('ADMIN')">
-                                    <span>SĐT liên hệ:</span> <strong class="text-dark" th:text="${room.tenantPhone != null ? room.tenantPhone : 'Chưa có'}">0912345678</strong>
-                                </div>
-                                <div class="col-md-6">
-                                    <span>Ngày bắt đầu:</span> <strong class="text-dark" th:text="${room.leaseStartDate != null ? room.leaseStartDate : '---'}">15/01/2026</strong>
-                                </div>
-                                <div class="col-md-6">
-                                    <span>Ngày kết thúc:</span> <strong class="text-dark" th:text="${room.leaseEndDate != null ? room.leaseEndDate : '---'}">15/01/2027</strong>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                 </div>

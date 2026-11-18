@@ -4,6 +4,7 @@ import com.qlphongtro.entity.Incident;
 import com.qlphongtro.service.IncidentService;
 import com.qlphongtro.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -52,6 +53,8 @@ public class IncidentController {
             model.addAttribute("incident", incident);
             model.addAttribute("rooms", roomService.getAllRooms());
             return "incident/form";
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/incidents";
@@ -64,6 +67,8 @@ public class IncidentController {
         try {
             incidentService.saveIncident(incident);
             redirectAttributes.addFlashAttribute("successMessage", "Lưu thông tin sự cố thành công!");
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
         }

@@ -19,6 +19,12 @@ public interface TenantRepository extends JpaRepository<Tenant, Integer> {
     // Tìm theo số điện thoại
     Optional<Tenant> findByPhone(String phone);
 
+    Optional<Tenant> findByUser_Username(String username);
+
+    Optional<Tenant> findByTenantIdAndUser_Username(Integer tenantId, String username);
+
+    boolean existsByUser_UserId(Integer userId);
+
     // Tìm kiếm khách thuê theo tên hoặc số CCCD hoặc SĐT
     List<Tenant> findByFullNameContainingIgnoreCaseOrIdNumberContainingOrPhoneContaining(
             String fullName, String idNumber, String phone

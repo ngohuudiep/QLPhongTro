@@ -16,7 +16,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 
 @Controller
-@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminRoomController {
 
     private final RoomListingService roomListingService;

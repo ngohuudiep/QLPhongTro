@@ -2,10 +2,15 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.entity.*;
 import com.qlphongtro.repository.*;
+import com.qlphongtro.security.CurrentUser;
+import com.qlphongtro.security.BuildingAccess;
 import com.qlphongtro.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,35 +26,67 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final ContractRepository contractRepository;
     private final MeterReadingRepository meterReadingRepository;
     private final RoomServiceRepository roomServiceRepository;
+    private final BuildingAccess buildingAccess;
 
     @Autowired
     public InvoiceServiceImpl(
             InvoiceRepository invoiceRepository,
             ContractRepository contractRepository,
             MeterReadingRepository meterReadingRepository,
-            RoomServiceRepository roomServiceRepository) {
+            RoomServiceRepository roomServiceRepository,
+            BuildingAccess buildingAccess) {
         this.invoiceRepository = invoiceRepository;
         this.contractRepository = contractRepository;
         this.meterReadingRepository = meterReadingRepository;
         this.roomServiceRepository = roomServiceRepository;
+        this.buildingAccess = buildingAccess;
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Invoice> getAllInvoices() {
+        if (CurrentUser.isTenant()) {
+            return invoiceRepository.findAllForTenant(CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : invoiceRepository.findByContract_Room_Building_BuildingIdIn(buildingIds);
+        }
         return invoiceRepository.findAll();
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public Invoice getInvoiceById(Integer id) {
+        if (CurrentUser.isTenant()) {
+            return invoiceRepository.findByIdAndTenantUsername(id, CurrentUser.username())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            if (buildingIds.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+            return invoiceRepository.findByInvoiceIdAndContract_Room_Building_BuildingIdIn(id, buildingIds)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        }
         return invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn ID: " + id));
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
     @Transactional(readOnly = true)
     public List<Invoice> getInvoicesByContractId(Integer contractId) {
+        if (CurrentUser.isTenant()) {
+            return invoiceRepository.findByContractIdAndTenantUsername(contractId, CurrentUser.username());
+        }
+        if (buildingAccess.isStaff()) {
+            List<Integer> buildingIds = buildingAccess.assignedBuildingIds();
+            return buildingIds.isEmpty() ? List.of() : invoiceRepository.findByContract_ContractIdAndContract_Room_Building_BuildingIdIn(contractId, buildingIds);
+        }
         return invoiceRepository.findByContract_ContractId(contractId);
     }
 
@@ -63,6 +100,7 @@ public class InvoiceServiceImpl implements InvoiceService {
      * Trả về object Invoice đã được lưu.
      */
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Invoice generateMonthlyInvoice(Integer contractId, Date month) {
         if (month == null) {
             month = new Date();
@@ -72,6 +110,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Invoice generateMonthlyInvoice(Integer contractId, LocalDate month) {
         final LocalDate targetMonth = (month != null) ? month : LocalDate.now();
 
@@ -79,6 +118,9 @@ public class InvoiceServiceImpl implements InvoiceService {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hợp đồng ID: " + contractId));
 
+        if (buildingAccess.isStaff()) {
+            buildingAccess.requireRoom(contract.getRoom());
+        }
         Room room = contract.getRoom();
         if (room == null) {
             throw new RuntimeException("Hợp đồng chưa được liên kết với phòng nào!");
@@ -170,11 +212,19 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     public Invoice saveInvoice(Invoice invoice) {
+        if (buildingAccess.isStaff() && invoice.getInvoiceId() != null) {
+            getInvoiceById(invoice.getInvoiceId());
+        }
+        if (invoice.getContract() != null) {
+            buildingAccess.requireRoom(invoice.getContract().getRoom());
+        }
         return invoiceRepository.save(invoice);
     }
 
     @Override
+    @PreAuthorize("denyAll()")
     public void deleteInvoice(Integer id) {
         if (!invoiceRepository.existsById(id)) {
             throw new RuntimeException("Không tìm thấy hóa đơn ID: " + id);

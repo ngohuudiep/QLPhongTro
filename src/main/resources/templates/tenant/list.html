@@ -97,11 +97,13 @@
                                     <i class="bi bi-pencil-square"></i> Sửa
                                 </a>
                                 <!-- Nút Xóa -->
-                                <a th:href="@{/tenants/delete/{id}(id=${tenant.tenantId})}" 
-                                   class="btn btn-sm btn-outline-danger" title="Xóa"
-                                   onclick="return confirm('Bạn có chắc chắn muốn xóa khách thuê này không?');">
-                                    <i class="bi bi-trash"></i> Xóa
-                                </a>
+                                <form th:action="@{/tenants/delete/{id}(id=${tenant.tenantId})}" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa khách thuê này không?');">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                        <i class="bi bi-trash"></i> Xóa
+                                    </button>
+                                </form>
                             </td>
                         </tr>
 

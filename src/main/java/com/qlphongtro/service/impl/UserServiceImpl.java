@@ -2,31 +2,52 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.dto.ProfileDto;
 import com.qlphongtro.dto.RegisterRequest;
+import com.qlphongtro.dto.AdminUserForm;
 import com.qlphongtro.entity.Role;
 import com.qlphongtro.entity.User;
 import com.qlphongtro.repository.RoleRepository;
 import com.qlphongtro.repository.UserRepository;
+import com.qlphongtro.service.OtpDeliveryException;
+import com.qlphongtro.service.OtpSender;
 import com.qlphongtro.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final int MAX_RESET_OTP_REQUESTS_PER_HOUR = 3;
+    private static final int MAX_RESET_OTP_FAILED_ATTEMPTS = 5;
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpSender otpSender;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            OtpSender otpSender) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.otpSender = otpSender;
     }
 
     @Override
@@ -52,10 +73,9 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Số điện thoại '" + request.getPhone() + "' đã được đăng ký tài khoản khác!");
         }
 
-        // 5. Xác định vai trò: "ADMIN" (Chủ trọ) hoặc "USER" (Người thuê)
-        String targetRole = "ADMIN".equalsIgnoreCase(request.getRoleChoice()) ? "ADMIN" : "USER";
-        Role role = roleRepository.findByRoleName(targetRole)
-                .orElseGet(() -> roleRepository.save(new Role(null, targetRole)));
+        // Public registration always creates a tenant account.
+        Role role = roleRepository.findByRoleName("USER")
+                .orElseGet(() -> roleRepository.save(new Role(null, "USER")));
 
         // 6. Tạo User mới và băm mật khẩu bằng BCrypt
         User user = new User();
@@ -66,8 +86,117 @@ public class UserServiceImpl implements UserService {
         user.setPhone(request.getPhone().trim());
         user.setRole(role);
         user.setFailedLoginAttempts(0);
+        user.setAccountEnabled(true);
 
         return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<User> getManagedUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
+    public User getManagedUser(Integer userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public User saveManagedUser(AdminUserForm form) {
+        String username = form.getUsername().trim();
+        String email = form.getEmail().trim();
+        String phone = form.getPhone().trim();
+        String roleName = form.getRoleName().trim().toUpperCase();
+        if (!"ADMIN".equals(roleName) && !"STAFF".equals(roleName) && !"USER".equals(roleName)) {
+            throw new IllegalArgumentException("Vai trò không hợp lệ.");
+        }
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new IllegalArgumentException("Vai trò không tồn tại."));
+
+        User user;
+        if (form.getUserId() == null) {
+            if ("USER".equals(roleName)) {
+                throw new IllegalArgumentException("Không thể tạo tài khoản USER từ màn hình quản trị.");
+            }
+            if (form.getPassword() == null || form.getPassword().length() < 8) {
+                throw new IllegalArgumentException("Mật khẩu tạo tài khoản phải có ít nhất 8 ký tự.");
+            }
+            if (userRepository.existsByUsername(username) || userRepository.existsByEmail(email)
+                    || userRepository.existsByPhone(phone)) {
+                throw new IllegalArgumentException("Tên đăng nhập, email hoặc số điện thoại đã được sử dụng.");
+            }
+            user = new User();
+            user.setUsername(username);
+            user.setPassword(passwordEncoder.encode(form.getPassword()));
+            user.setAccountEnabled(true);
+        } else {
+            user = userRepository.findById(form.getUserId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if ("USER".equals(roleName) && (user.getRole() == null || !"USER".equals(user.getRole().getRoleName()))) {
+                throw new IllegalArgumentException("Không thể gán vai trò USER cho tài khoản quản trị.");
+            }
+            String actor = SecurityContextHolder.getContext().getAuthentication().getName();
+            if (user.getUsername().equals(actor) && !"ADMIN".equals(roleName)) {
+                throw new AccessDeniedException("Administrators cannot lower their own role.");
+            }
+            if (!"ADMIN".equals(roleName)) {
+                preventRemovingLastActiveAdmin(user);
+            }
+            if (!user.getUsername().equals(username) && userRepository.existsByUsername(username)
+                    || !user.getEmail().equalsIgnoreCase(email) && userRepository.existsByEmail(email)
+                    || !user.getPhone().equalsIgnoreCase(phone) && userRepository.existsByPhone(phone)) {
+                throw new IllegalArgumentException("Tên đăng nhập, email hoặc số điện thoại đã được sử dụng.");
+            }
+            user.setUsername(username);
+            if (form.getPassword() != null && !form.getPassword().isBlank()) {
+                if (form.getPassword().length() < 8) {
+                    throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự.");
+                }
+                user.setPassword(passwordEncoder.encode(form.getPassword()));
+            }
+        }
+
+        user.setFullName(form.getFullName().trim());
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setRole(role);
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void setAccountEnabled(Integer userId, boolean enabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        String actor = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!enabled && user.getUsername().equals(actor)) {
+            throw new AccessDeniedException("Administrators cannot lock their own account.");
+        }
+        if (!enabled) {
+            preventRemovingLastActiveAdmin(user);
+        }
+        user.setAccountEnabled(enabled);
+        if (enabled) {
+            user.setFailedLoginAttempts(0);
+            user.setLockoutUntil(null);
+        }
+        userRepository.save(user);
+    }
+
+    private void preventRemovingLastActiveAdmin(User user) {
+        if (user.isAccountEnabled() && user.getRole() != null
+                && "ADMIN".equals(user.getRole().getRoleName())
+                && userRepository.findActiveAdministratorsForUpdate().size() <= 1) {
+            throw new AccessDeniedException("Cannot deactivate or demote the last active administrator.");
+        }
     }
 
     @Override
@@ -116,40 +245,93 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public String generateResetOtp(String identifier) {
-        User user = userRepository.findByIdentifier(identifier.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản với thông tin đã cung cấp."));
+    public void generateResetOtp(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return;
+        }
 
-        // Tạo mã OTP 6 số ngẫu nhiên
-        SecureRandom random = new SecureRandom();
-        String otp = String.format("%06d", random.nextInt(1000000));
+        User user = userRepository.findByIdentifierForUpdate(identifier.trim()).orElse(null);
+        if (user == null) {
+            return;
+        }
 
-        user.setResetOtp(otp);
-        user.setResetOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime requestWindowStart = user.getResetOtpRequestWindowStart();
+        if (requestWindowStart == null || !requestWindowStart.plusHours(1).isAfter(now)) {
+            user.setResetOtpRequestWindowStart(now);
+            user.setResetOtpRequestCount(0);
+        }
+        if (user.getResetOtpRequestCount() >= MAX_RESET_OTP_REQUESTS_PER_HOUR) {
+            return;
+        }
+
+        user.setResetOtpRequestCount(user.getResetOtpRequestCount() + 1);
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            userRepository.save(user);
+            return;
+        }
+
+        String otp = String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        user.setResetOtpHash(passwordEncoder.encode(otp));
+        user.setResetOtpExpiry(now.plusMinutes(10));
+        user.setResetOtpFailedAttempts(0);
         userRepository.save(user);
-
-        return otp;
+        try {
+            otpSender.send(user.getEmail(), otp);
+        } catch (OtpDeliveryException exception) {
+            clearResetOtp(user);
+            userRepository.save(user);
+            logger.error("Password reset email delivery failed.");
+        }
     }
 
     @Override
     @Transactional
-    public void resetPasswordWithOtp(String identifier, String otp, String newPassword) {
-        User user = userRepository.findByIdentifier(identifier.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Thông tin tài khoản không hợp lệ."));
-
-        if (user.getResetOtp() == null || !user.getResetOtp().equals(otp.trim())) {
-            throw new IllegalArgumentException("Mã OTP không chính xác!");
+    public boolean resetPasswordWithOtp(String identifier, String otp, String newPassword) {
+        if (identifier == null || identifier.isBlank() || otp == null || otp.isBlank()) {
+            return false;
         }
 
-        if (user.getResetOtpExpiry() == null || user.getResetOtpExpiry().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Mã OTP đã hết hiệu lực. Vui lòng yêu cầu mã mới!");
+        User user = userRepository.findByIdentifierForUpdate(identifier.trim()).orElse(null);
+        if (user == null || user.getResetOtpHash() == null) {
+            return false;
+        }
+
+        LocalDateTime expiry = user.getResetOtpExpiry();
+        if (expiry == null || !expiry.isAfter(LocalDateTime.now())) {
+            clearResetOtp(user);
+            userRepository.save(user);
+            return false;
+        }
+
+        if (user.getResetOtpFailedAttempts() >= MAX_RESET_OTP_FAILED_ATTEMPTS) {
+            clearResetOtp(user);
+            userRepository.save(user);
+            return false;
+        }
+
+        String otpHash = user.getResetOtpHash();
+        if (!otpHash.matches("^\\$2[aby]\\$.{56}$") || !passwordEncoder.matches(otp.trim(), otpHash)) {
+            int failedAttempts = user.getResetOtpFailedAttempts() + 1;
+            user.setResetOtpFailedAttempts(failedAttempts);
+            if (failedAttempts >= MAX_RESET_OTP_FAILED_ATTEMPTS) {
+                clearResetOtp(user);
+            }
+            userRepository.save(user);
+            return false;
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetOtp(null);
-        user.setResetOtpExpiry(null);
+        clearResetOtp(user);
         user.setFailedLoginAttempts(0);
         user.setLockoutUntil(null);
         userRepository.save(user);
+        return true;
+    }
+
+    private void clearResetOtp(User user) {
+        user.setResetOtpHash(null);
+        user.setResetOtpExpiry(null);
+        user.setResetOtpFailedAttempts(0);
     }
 }

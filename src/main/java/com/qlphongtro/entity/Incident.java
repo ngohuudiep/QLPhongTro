@@ -18,6 +18,10 @@ public class Incident {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Tenant reportedBy;
+
     @Column(name = "title", nullable = false, length = 200)
     private String title;
 
@@ -65,6 +69,9 @@ public class Incident {
     public void setRoom(Room room) {
         this.room = room;
     }
+
+    public Tenant getReportedBy() { return reportedBy; }
+    public void setReportedBy(Tenant reportedBy) { this.reportedBy = reportedBy; }
 
     public String getTitle() {
         return title;

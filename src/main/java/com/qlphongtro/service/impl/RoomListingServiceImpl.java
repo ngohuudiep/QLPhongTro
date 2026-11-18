@@ -5,6 +5,9 @@ import com.qlphongtro.repository.RoomListingRepository;
 import com.qlphongtro.service.RoomListingService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +23,26 @@ public class RoomListingServiceImpl implements RoomListingService {
 
     private final RoomListingRepository roomListingRepository;
     private final com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator;
+    private final Environment environment;
+    private final boolean demoRoomSeedEnabled;
 
     @Autowired
     public RoomListingServiceImpl(RoomListingRepository roomListingRepository,
-                                  com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator) {
+                                  com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator,
+                                  Environment environment,
+                                  @Value("${app.seed.demo-rooms:false}") boolean demoRoomSeedEnabled) {
         this.roomListingRepository = roomListingRepository;
         this.databaseUnicodeMigrator = databaseUnicodeMigrator;
+        this.environment = environment;
+        this.demoRoomSeedEnabled = demoRoomSeedEnabled;
     }
 
     @PostConstruct
     public void init() {
         databaseUnicodeMigrator.migrateIfNeeded();
-        seedDemoRoomsIfEmpty();
+        if (demoRoomSeedEnabled || environment.acceptsProfiles(Profiles.of("dev"))) {
+            seedDemoRoomsIfEmpty();
+        }
     }
 
     @Override
