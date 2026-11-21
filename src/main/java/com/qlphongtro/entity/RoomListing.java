@@ -101,6 +101,11 @@ public class RoomListing {
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
 
+    /** Phòng vật lý tương ứng trong tòa nhà (nullable) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
+
     public RoomListing() {}
 
     public RoomListing(Integer listingId, String roomCode, String title, String description, Integer floorNo,
@@ -180,6 +185,9 @@ public class RoomListing {
 
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+
+    public Room getRoom() { return room; }
+    public void setRoom(Room room) { this.room = room; }
 
     // ==================== View Helper Methods ====================
 
