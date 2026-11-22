@@ -35,6 +35,9 @@ class RbacSupplementaryMockMvcTest {
     @MockBean TenantService tenantService;
     @MockBean RoomListingService roomListingService;
     @MockBean CustomUserDetailsService userDetailsService;
+    @MockBean com.qlphongtro.service.AdminWorkspaceService adminWorkspaceService;
+    @MockBean com.qlphongtro.repository.BuildingRepository buildingRepository;
+    @MockBean com.qlphongtro.repository.UserRepository userRepository;
 
     @Test
     @WithMockUser(username = "staff-x", roles = "STAFF")

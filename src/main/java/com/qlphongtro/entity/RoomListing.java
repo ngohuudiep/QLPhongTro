@@ -69,7 +69,7 @@ public class RoomListing {
 
     /** Danh sách tiện nghi (NVARCHAR hỗ trợ tiếng Việt có dấu) */
     @Column(name = "amenities", columnDefinition = "NVARCHAR(500)")
-    private String amenities = "Điều hòa, Wifi, Nóng lạnh";
+    private String amenities;
 
     /** URL ảnh đại diện chính */
     @Column(name = "image_url", length = 500)
@@ -105,6 +105,10 @@ public class RoomListing {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id")
     private Room room;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "managed_room_id")
+    private Room managedRoom;
 
     public RoomListing() {}
 
@@ -164,6 +168,7 @@ public class RoomListing {
         return imageUrl;
     }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getStoredImageUrl() { return imageUrl; }
 
     public String getImageGallery() { return imageGallery; }
     public void setImageGallery(String imageGallery) { this.imageGallery = imageGallery; }
@@ -186,7 +191,29 @@ public class RoomListing {
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
 
-    public Room getRoom() { return room; }
+    public Room getManagedRoom() { return managedRoom != null ? managedRoom : room; }
+    public void setManagedRoom(Room managedRoom) {
+        this.managedRoom = managedRoom;
+        if (this.room == null) this.room = managedRoom;
+    }
+
+    public List<String> getImageUrls() {
+        List<String> urls = new ArrayList<>();
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            urls.add(imageUrl.trim());
+        }
+        if (imageGallery != null && !imageGallery.isBlank()) {
+            for (String raw : imageGallery.split("[,\n\r]+")) {
+                String clean = raw.trim();
+                if (!clean.isEmpty() && !urls.contains(clean)) {
+                    urls.add(clean);
+                }
+            }
+        }
+        return urls;
+    }
+
+    public Room getRoom() { return room != null ? room : managedRoom; }
     public void setRoom(Room room) { this.room = room; }
 
     // ==================== View Helper Methods ====================
@@ -213,7 +240,7 @@ public class RoomListing {
 
     public List<String> getAmenityList() {
         if (amenities == null || amenities.trim().isEmpty()) {
-            return List.of("Wifi", "Nóng lạnh");
+            return List.of();
         }
         return Arrays.stream(amenities.split(","))
                 .map(String::trim)

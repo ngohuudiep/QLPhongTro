@@ -20,7 +20,14 @@ public class Incident {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
-    private Tenant reportedBy;
+    private Tenant tenant;
+
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_by_user_id")
+    private User reportedBy;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -70,8 +77,17 @@ public class Incident {
         this.room = room;
     }
 
-    public Tenant getReportedBy() { return reportedBy; }
-    public void setReportedBy(Tenant reportedBy) { this.reportedBy = reportedBy; }
+    public User getReportedBy() { return reportedBy; }
+    public void setReportedBy(User reportedBy) { this.reportedBy = reportedBy; }
+    public void setReportedBy(Tenant tenant) {
+        this.tenant = tenant;
+        if (tenant != null && tenant.getUser() != null) {
+            this.reportedBy = tenant.getUser();
+        }
+    }
+
+    public Tenant getTenant() { return tenant; }
+    public void setTenant(Tenant tenant) { this.tenant = tenant; }
 
     public String getTitle() {
         return title;

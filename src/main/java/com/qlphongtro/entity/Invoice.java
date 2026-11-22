@@ -3,8 +3,10 @@ package com.qlphongtro.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Entity
 @Table(name = "Invoices")
@@ -38,9 +40,22 @@ public class Invoice {
     @Column(name = "status", length = 30)
     private String status;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "notes", columnDefinition = "NVARCHAR(MAX)")
+    private String notes;
+
     // Quan hệ 1-Nhiều với Payments (Lịch sử thanh toán của hóa đơn này)
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("lineItemId ASC")
+    private List<InvoiceLineItem> lineItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserNotification> notifications = new ArrayList<>();
 
     public Invoice() {
     }
@@ -121,12 +136,110 @@ public class Invoice {
         this.status = status;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
     public List<Payment> getPayments() {
         return payments;
     }
 
     public void setPayments(List<Payment> payments) {
         this.payments = payments;
+    }
+
+    public List<InvoiceLineItem> getLineItems() {
+        return lineItems;
+    }
+
+    public void setLineItems(List<InvoiceLineItem> lineItems) {
+        this.lineItems = lineItems == null ? new ArrayList<>() : lineItems;
+    }
+
+    public List<UserNotification> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(List<UserNotification> notifications) {
+        this.notifications = notifications == null ? new ArrayList<>() : notifications;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
+    public String getEffectiveStatus() {
+        if (isUnpaidStatus(status) && dueDate != null && dueDate.isBefore(LocalDate.now())) {
+            return "OVERDUE";
+        }
+        return status;
+    }
+
+    public String getStatusLabel() {
+        String effectiveStatus = getEffectiveStatus();
+        if (effectiveStatus == null) {
+            return "Không xác định";
+        }
+        return switch (effectiveStatus.toUpperCase(Locale.ROOT)) {
+            case "UNPAID", "CHƯA THANH TOÁN" -> "Chưa thanh toán";
+            case "PAID", "ĐÃ THANH TOÁN" -> "Đã thanh toán";
+            case "OVERDUE", "QUÁ HẠN" -> "Quá hạn";
+            case "CANCELLED", "CANCELED", "ĐÃ HỦY" -> "Đã hủy";
+            default -> effectiveStatus;
+        };
+    }
+
+    public String getTenantFullName() {
+        return contract != null ? contract.getTenantFullName() : null;
+    }
+
+    public BigDecimal getRoomCharge() {
+        return sumLineItems("Tiền phòng");
+    }
+
+    public BigDecimal getElectricityCharge() {
+        return sumLineItems("Tiền điện");
+    }
+
+    public BigDecimal getWaterCharge() {
+        return sumLineItems("Tiền nước");
+    }
+
+    public BigDecimal getServiceCharge() {
+        return sumLineItems(null, "Tiền phòng", "Tiền điện", "Tiền nước");
+    }
+
+    private BigDecimal sumLineItems(String exactName, String... excludedNames) {
+        if (lineItems == null || lineItems.isEmpty()) {
+            return null;
+        }
+        return lineItems.stream()
+                .filter(line -> exactName == null
+                        ? java.util.Arrays.stream(excludedNames)
+                                .noneMatch(name -> name.equalsIgnoreCase(line.getName()))
+                        : exactName.equalsIgnoreCase(line.getName()))
+                .map(InvoiceLineItem::getAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private static boolean isUnpaidStatus(String value) {
+        return "UNPAID".equalsIgnoreCase(value) || "CHƯA THANH TOÁN".equalsIgnoreCase(value);
     }
 
     public static class InvoiceBuilder {

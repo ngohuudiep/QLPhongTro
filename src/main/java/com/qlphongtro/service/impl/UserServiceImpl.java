@@ -38,6 +38,13 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final OtpSender otpSender;
 
+    public UserServiceImpl(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
+        this(userRepository, roleRepository, passwordEncoder, null);
+    }
+
     @Autowired
     public UserServiceImpl(
             UserRepository userRepository,
@@ -73,20 +80,33 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Số điện thoại '" + request.getPhone() + "' đã được đăng ký tài khoản khác!");
         }
 
-        // Public registration always creates a tenant account.
-        Role role = roleRepository.findByRoleName("USER")
-                .orElseGet(() -> roleRepository.save(new Role(null, "USER")));
+        String roleChoice = request.getRoleChoice() == null ? "TENANT" : request.getRoleChoice().trim().toUpperCase(java.util.Locale.ROOT);
+        if ("ADMIN".equalsIgnoreCase(roleChoice)) {
+            throw new IllegalArgumentException("Không thể đăng ký tài khoản Admin công khai.");
+        }
+        Role role;
+        if (Role.LANDLORD.equalsIgnoreCase(roleChoice)) {
+            role = roleRepository.findByRoleNameIgnoreCase(Role.LANDLORD)
+                    .orElseGet(() -> roleRepository.save(new Role(null, Role.LANDLORD)));
+        } else {
+            role = roleRepository.findByRoleName("USER")
+                    .or(() -> roleRepository.findByRoleNameIgnoreCase("TENANT"))
+                    .orElseGet(() -> roleRepository.save(new Role(null, "USER")));
+        }
 
-        // 6. Tạo User mới và băm mật khẩu bằng BCrypt
         User user = new User();
         user.setUsername(request.getUsername().trim());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName().trim());
         user.setEmail(request.getEmail().trim());
         user.setPhone(request.getPhone().trim());
+        user.setContactAddress(request.getContactAddress() == null ? null : request.getContactAddress().trim());
         user.setRole(role);
-        user.setFailedLoginAttempts(0);
+        user.setAccountStatus(Role.LANDLORD.equalsIgnoreCase(role.getRoleName()) ? "PENDING_APPROVAL" : "APPROVED");
         user.setAccountEnabled(true);
+        user.setEnabled(true);
+        user.setRegisteredAt(LocalDateTime.now());
+        user.setFailedLoginAttempts(0);
 
         return userRepository.save(user);
     }

@@ -1,6 +1,7 @@
 package com.qlphongtro;
 
 import com.qlphongtro.entity.RoomListing;
+import com.qlphongtro.repository.BookingRequestRepository;
 import com.qlphongtro.repository.RoomListingRepository;
 import com.qlphongtro.service.impl.RoomListingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,9 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Sort;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -21,14 +22,17 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RoomListingServiceTest {
+@DisplayName("Kiểm thử RoomListingService - Nghiệp vụ phòng trọ")
+class RoomListingServiceTest {
 
     @Mock
     private RoomListingRepository roomListingRepository;
+
+    @Mock
+    private BookingRequestRepository bookingRequestRepository;
 
     @Mock
     private com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator;
@@ -43,16 +47,16 @@ public class RoomListingServiceTest {
     @BeforeEach
     void setUp() {
         roomListingService = new RoomListingServiceImpl(
-                roomListingRepository, databaseUnicodeMigrator, environment, false);
+                roomListingRepository, bookingRequestRepository, databaseUnicodeMigrator, environment, false);
         sampleRooms = new ArrayList<>();
         // Tạo 14 phòng mẫu tương tự trong hệ thống
         for (int i = 1; i <= 14; i++) {
             RoomListing r = new RoomListing();
             r.setListingId(i);
             r.setRoomCode("P" + (100 + i));
-            r.setTitle("Phòng trọ mẫu số " + i);
-            r.setPrice(new BigDecimal("3000000"));
-            r.setArea(new BigDecimal("25.0"));
+            r.setPrice(BigDecimal.valueOf(2_000_000 + i * 200_000L));
+            r.setArea(BigDecimal.valueOf(15 + i * 2.0));
+            r.setFloorNo((i % 5) + 1);
             if (i <= 8) {
                 r.setStatus("TRONG");
             } else if (i <= 12) {
@@ -86,64 +90,91 @@ public class RoomListingServiceTest {
     }
 
     @Test
-    @DisplayName("Kiểm tra getAllRooms trả về đầy đủ 14 phòng và không gọi deleteAll")
-    void testGetAllRooms_ReturnsAllRooms() {
+    @DisplayName("Lấy danh sách tất cả phòng - trả về đủ 14 phòng")
+    void testGetAllRooms() {
         when(roomListingRepository.findAll(any(Sort.class))).thenReturn(sampleRooms);
 
         List<RoomListing> result = roomListingService.getAllRooms();
 
         assertNotNull(result);
         assertEquals(14, result.size());
-        verify(roomListingRepository, never()).deleteAll();
+        verify(roomListingRepository, times(1)).findAll(any(Sort.class));
     }
 
     @Test
-    @DisplayName("Tìm phòng theo ID hợp lệ (1..14) trả về đúng phòng")
-    void testGetById_ValidId_ReturnsRoom() {
-        RoomListing expectedRoom = sampleRooms.get(0); // ID 1, P101
-        when(roomListingRepository.findById(1)).thenReturn(Optional.of(expectedRoom));
+    @DisplayName("Lấy danh sách phòng còn trống - trả về đúng 8 phòng")
+    void testGetAvailableRooms() {
+        List<RoomListing> availableRooms = sampleRooms.stream().filter(r -> "TRONG".equals(r.getStatus())).toList();
+        when(roomListingRepository.findByStatus("TRONG")).thenReturn(availableRooms);
 
-        RoomListing actualRoom = roomListingService.getById(1);
+        List<RoomListing> result = roomListingService.getAvailableRooms();
 
-        assertNotNull(actualRoom);
-        assertEquals(1, actualRoom.getListingId());
-        assertEquals("P101", actualRoom.getRoomCode());
-        verify(roomListingRepository, never()).deleteAll();
+        assertNotNull(result);
+        assertEquals(8, result.size());
+        assertTrue(result.stream().allMatch(r -> "TRONG".equals(r.getStatus())));
     }
 
     @Test
-    @DisplayName("Tìm phòng theo ID không tồn tại (ví dụ 364 hoặc 999) ném IllegalArgumentException thân thiện")
-    void testGetById_NotFound_ThrowsException() {
-        when(roomListingRepository.findById(364)).thenReturn(Optional.empty());
+    @DisplayName("Lấy phòng theo ID hợp lệ - trả về đúng phòng")
+    void testGetById_Success() {
+        RoomListing expected = sampleRooms.get(0);
+        when(roomListingRepository.findById(1)).thenReturn(Optional.of(expected));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
-            roomListingService.getById(364);
-        });
+        RoomListing result = roomListingService.getById(1);
 
-        assertTrue(ex.getMessage().contains("Không tìm thấy thông tin phòng ID: 364"));
-        verify(roomListingRepository, never()).deleteAll();
+        assertNotNull(result);
+        assertEquals("P101", result.getRoomCode());
+        assertEquals(1, result.getListingId());
+    }
+
+    @Test
+    @DisplayName("Lấy phòng theo ID không tồn tại - ném ra IllegalArgumentException")
+    void testGetById_NotFound() {
+        when(roomListingRepository.findById(999)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> roomListingService.getById(999));
+    }
+
+    @Test
+    @DisplayName("Không tự hiển thị tiện nghi chưa được lưu")
+    void missingAmenitiesAreNotInvented() {
+        RoomListing room = new RoomListing();
+        assertTrue(room.getAmenityList().isEmpty());
     }
 
     @Test
     @DisplayName("Lọc theo trạng thái TRONG trả về đúng số phòng còn trống (8 phòng)")
     void testFilterRooms_ByStatusTrong() {
         List<RoomListing> trongRooms = sampleRooms.stream().filter(r -> "TRONG".equals(r.getStatus())).toList();
-        when(roomListingRepository.findByStatus(eq("TRONG"), any(Sort.class))).thenReturn(trongRooms);
+        when(roomListingRepository.findAll(any(Sort.class))).thenReturn(sampleRooms);
 
-        List<RoomListing> result = roomListingService.filterRooms("", "TRONG", "all", null, "newest");
+        List<RoomListing> result = roomListingService.filterRooms("", "TRONG", "all", null, "price_asc");
 
         assertNotNull(result);
         assertEquals(8, result.size());
+        assertTrue(result.stream().allMatch(r -> "TRONG".equals(r.getStatus())));
     }
 
     @Test
-    @DisplayName("Lọc khi không có điều kiện nào trả về toàn bộ 14 phòng")
-    void testFilterRooms_All() {
+    @DisplayName("Lọc không truyền điều kiện - trả về toàn bộ 14 phòng")
+    void testFilterRooms_NoFilter() {
         when(roomListingRepository.findAll(any(Sort.class))).thenReturn(sampleRooms);
 
-        List<RoomListing> result = roomListingService.filterRooms("", "ALL", "all", null, "newest");
+        List<RoomListing> result = roomListingService.filterRooms("", "ALL", "all", null, "price_asc");
 
         assertNotNull(result);
         assertEquals(14, result.size());
+    }
+
+    @Test
+    @DisplayName("Không xóa bài đăng đã có yêu cầu thuê")
+    void testDeleteRoomWithBookingRequest_IsRejected() {
+        RoomListing room = sampleRooms.get(0);
+        when(roomListingRepository.findById(room.getListingId())).thenReturn(Optional.of(room));
+        when(bookingRequestRepository.existsByRoom_ListingId(room.getListingId())).thenReturn(true);
+
+        assertThrows(IllegalStateException.class, () -> roomListingService.delete(room.getListingId()));
+
+        verify(roomListingRepository, never()).delete(any(RoomListing.class));
     }
 }

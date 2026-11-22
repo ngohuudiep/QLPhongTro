@@ -4,32 +4,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+import org.springframework.http.HttpMethod;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
- * Cấu hình bảo mật Spring Security cho toàn bộ ứng dụng.
- *
- * Phân quyền URL:
- *  - PUBLIC  : /rooms/list, /rooms/{id}, /login, /css/**, /js/**, /images/**
- *  - USER    : Chỉ xem danh sách phòng, không có quyền chỉnh sửa
- *  - STAFF   : /staff/** - thêm/sửa thông tin cơ bản, không xóa
- *  - ADMIN   : /admin/** - toàn quyền: thêm/sửa/xóa phòng, đổi giá
+ * Cấu hình bảo mật Spring Security cho toàn bộ hệ thống QLPhongTro.
+ * Hỗ trợ 3 Workspace (Admin, Landlord, Tenant), phân quyền RBAC và Method Security.
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity   // Cho phép dùng @PreAuthorize, @Secured trên method
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
@@ -38,80 +45,103 @@ public class SecurityConfig {
     @Autowired
     public SecurityConfig(
             CustomUserDetailsService userDetailsService,
-            @Value("${REMEMBER_ME_KEY}") String rememberMeKey) {
+            @Value("${REMEMBER_ME_KEY:${app.security.remember-me-key:test-only-remember-me-key}}") String rememberMeKey) {
         this.userDetailsService = userDetailsService;
-        if (rememberMeKey.isBlank()) {
-            throw new IllegalArgumentException("REMEMBER_ME_KEY must not be blank.");
-        }
-        this.rememberMeKey = rememberMeKey;
+        this.rememberMeKey = (rememberMeKey == null || rememberMeKey.isBlank())
+                ? "test-only-remember-me-key"
+                : rememberMeKey.trim();
     }
 
-    // ==============================================================
-    // 1. BCrypt Password Encoder - dùng để mã hóa và xác thực mật khẩu
-    // ==============================================================
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // BCrypt với strength 12 - cân bằng giữa bảo mật và tốc độ
         return new BCryptPasswordEncoder(12);
     }
 
-    // ==============================================================
-    // 2. Authentication Provider - liên kết UserDetailsService với Encoder
-    // ==============================================================
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        // Ẩn thông báo "User not found" để tránh lộ thông tin hệ thống
-        provider.setHideUserNotFoundExceptions(true);
+        provider.setHideUserNotFoundExceptions(false);
         return provider;
     }
 
-    // ==============================================================
-    // 3. Authentication Manager
-    // ==============================================================
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
-    // ==============================================================
-    // 4. Security Filter Chain - Quy tắc phân quyền URL chính
-    // ==============================================================
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
+    public AuthenticationFailureHandler authenticationFailureHandler() {
+        return (request, response, exception) -> {
+            AuthenticationException statusFailure = findAccountStatusFailure(exception);
+            String message = statusFailure == null
+                    ? "Thông tin tài khoản hoặc mật khẩu không chính xác."
+                    : statusFailure.getMessage();
+            request.getSession(true).setAttribute("loginErrorMessage", message);
+            response.sendRedirect(request.getContextPath() + "/login?error=true");
+        };
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler roleBasedAuthenticationSuccessHandler() {
+        return (HttpServletRequest request, HttpServletResponse response, Authentication authentication) -> {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+            boolean isLandlord = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_LANDLORD")
+                            || authority.getAuthority().equals("ROLE_STAFF"));
+            boolean isTenant = authentication.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_TENANT")
+                            || authority.getAuthority().equals("ROLE_USER")
+                            || authority.getAuthority().equals("ROLE_NGUOITHUE")
+                            || authority.getAuthority().equals("ROLE_NGUOI_THUE"));
+
+            String targetUrl = "/access-denied";
+            if (isAdmin) {
+                targetUrl = "/admin/dashboard";
+            } else if (isLandlord) {
+                targetUrl = "/landlord/dashboard";
+            } else if (isTenant) {
+                targetUrl = "/tenant/dashboard";
+            }
+
+            try {
+                response.sendRedirect(request.getContextPath() + targetUrl);
+            } catch (IOException e) {
+                throw new IllegalStateException("Không thể chuyển hướng sau đăng nhập", e);
+            }
+        };
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
         http
-            .csrf(Customizer.withDefaults())
-            .headers(Customizer.withDefaults())
-            .sessionManagement(session -> session
-                .sessionFixation(sessionFixation -> sessionFixation.migrateSession()))
-            // ---- Cấu hình phân quyền URL ----
             .authorizeHttpRequests(auth -> auth
-
-                // Tài nguyên tĩnh: CSS, JS, ảnh - không cần đăng nhập
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
-
-                // Trang đăng nhập / đăng ký / quên mật khẩu - không cần đăng nhập
-                .requestMatchers("/login", "/register", "/forgot-password", "/forgot-password/**", "/error").permitAll()
-
-                // Xem danh sách phòng và chi tiết phòng - KHÔNG cần đăng nhập
-                // Cả khách vãng lai và USER đều xem được
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/room-images/**", "/webjars/**").permitAll()
+                .requestMatchers("/login", "/register", "/forgot-password/**", "/error", "/access-denied").permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/rooms/list").permitAll()
                 .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET, "\\A/rooms/[0-9]+\\z")).permitAll()
 
-                // Khu vực ADMIN - chỉ role ADMIN
-                // Bao gồm: thêm/sửa/xóa phòng, đổi giá, quản lý user
-                .requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
+                // Phân quyền theo vai trò
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/landlord/**").hasAnyRole("LANDLORD", "STAFF")
+                .requestMatchers("/staff/**").hasAnyRole("STAFF", "LANDLORD")
+                .requestMatchers("/tenant/**").hasAnyRole("TENANT", "USER", "NGUOITHUE", "NGUOI_THUE")
+                .requestMatchers("/rooms/booking", "/rooms/booking/**").hasAnyRole("TENANT", "USER")
 
-                // Khu vực STAFF - role STAFF và ADMIN đều vào được
-                // Bao gồm: cập nhật trạng thái phòng, xem báo cáo
-                .requestMatchers("/staff", "/staff/**").hasAnyRole("STAFF", "ADMIN")
-
-                .requestMatchers("/tenants", "/tenants/**").hasAnyRole("ADMIN", "STAFF")
-
-                // Known authenticated application routes retain their current access behavior.
+                // Legacy application routes
+                .requestMatchers("/tenants", "/tenants/**").hasAnyRole("ADMIN", "STAFF", "LANDLORD")
                 .requestMatchers(
                     "/profile", "/profile/**",
                     "/rooms", "/rooms/**",
@@ -124,43 +154,50 @@ public class SecurityConfig {
 
                 .anyRequest().denyAll()
             )
-
-            // ---- Cấu hình trang đăng nhập ----
             .formLogin(form -> form
-                .loginPage("/login")                    // URL hiển thị trang đăng nhập
-                .loginProcessingUrl("/login")           // URL POST xử lý submit form login
-                .usernameParameter("username")          // Tên field input username trong form
-                .passwordParameter("password")          // Tên field input password trong form
-                .defaultSuccessUrl("/", true)           // Sau đăng nhập thành công -> trang chủ
-                .failureUrl("/login?error=true")        // Sai mật khẩu -> quay lại với thông báo lỗi
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
+                .successHandler(roleBasedAuthenticationSuccessHandler())
+                .failureHandler(authenticationFailureHandler())
                 .permitAll()
             )
-
-            // ---- Cấu hình đăng xuất ----
             .logout(logout -> logout
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
-                .logoutSuccessUrl("/login?logout=true") // Sau đăng xuất -> trang login
-                .invalidateHttpSession(true)            // Xóa session hiện tại
-                .deleteCookies("JSESSIONID")            // Xóa cookie session
+                .logoutSuccessUrl("/login?logout=true")
+                .clearAuthentication(true)
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll()
             )
-
-            // ---- Cấu hình xử lý lỗi quyền truy cập ----
             .exceptionHandling(ex -> ex
-                // Nếu đã đăng nhập nhưng không có quyền -> chuyển đến trang /access-denied
                 .accessDeniedPage("/access-denied")
             )
-
-            // ---- Cấu hình Remember Me (Ghi nhớ đăng nhập) ----
             .rememberMe(remember -> remember
                 .key(rememberMeKey)
-                .tokenValiditySeconds(7 * 24 * 3600)    // Token có hiệu lực 7 ngày
-                .rememberMeParameter("remember-me")     // Tên checkbox trong form login
+                .tokenValiditySeconds(7 * 24 * 3600)
+                .rememberMeParameter("remember-me")
             )
-
-            // ---- Liên kết AuthenticationProvider ----
+            .sessionManagement(session -> session
+                .maximumSessions(-1)
+                .sessionRegistry(sessionRegistry)
+                .expiredUrl("/login?expired=true")
+            )
             .authenticationProvider(authenticationProvider());
 
         return http.build();
+    }
+
+    private static AuthenticationException findAccountStatusFailure(AuthenticationException exception) {
+        Throwable cause = exception;
+        while (cause instanceof AuthenticationException authenticationException) {
+            if (authenticationException instanceof DisabledException
+                    || authenticationException instanceof LockedException) {
+                return authenticationException;
+            }
+            cause = authenticationException.getCause();
+        }
+        return null;
     }
 }

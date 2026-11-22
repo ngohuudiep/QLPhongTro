@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yêu cầu thuê phòng - QLPhongTro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/landlord.css}">
+    <style>
+        .request-page{display:grid;gap:1.25rem}.request-stats{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:.8rem}
+        .request-stat{background:#fff;border:1px solid #e8edf4;border-radius:16px;padding:1rem;box-shadow:0 6px 20px rgba(15,35,75,.045)}
+        .request-stat .icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#edf4ff;color:#2563eb;font-size:1.15rem}
+        .request-stat strong{display:block;font-size:1.45rem;color:#14213d;margin-top:.7rem}.request-stat span{font-size:.82rem;color:#68758a}
+        .request-filter{background:#fff;border:1px solid #e8edf4;border-radius:16px;padding:1rem}
+        .request-table-wrap{background:#fff;border:1px solid #e8edf4;border-radius:16px;overflow:hidden}
+        .request-table{min-width:1050px;margin:0}.request-table thead th{background:#f7f9fc;color:#64748b;font-size:.73rem;text-transform:uppercase;letter-spacing:.045em;white-space:nowrap;padding:.9rem}
+        .request-table td{padding:.85rem;vertical-align:middle}.room-thumb{width:58px;height:46px;object-fit:cover;border-radius:9px;background:#eef2f7}
+        .request-status{display:inline-flex;align-items:center;gap:.4rem;border-radius:999px;padding:.35rem .65rem;background:#eef4ff;color:#1d4ed8;font-size:.77rem;font-weight:650;white-space:nowrap}
+        .request-status.pending{background:#fff7e6;color:#a15c00}.request-status.done{background:#e8f7ef;color:#18794e}.request-status.closed{background:#f2f4f7;color:#667085}
+        @media(max-width:1200px){.request-stats{grid-template-columns:repeat(3,minmax(150px,1fr))}}
+        @media(max-width:640px){.request-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.request-stat{padding:.8rem}.request-stat strong{font-size:1.2rem}}
+    </style>
+</head>
+<body class="landlord-app">
+<div class="landlord-layout">
+    <div th:replace="~{landlord/fragments :: sidebar(${activePage})}"></div>
+    <main class="landlord-main">
+        <div th:replace="~{landlord/fragments :: topbar('Quản lý yêu cầu thuê')}"></div>
+        <div th:replace="~{landlord/fragments :: alerts}"></div>
+        <div class="request-page">
+            <header>
+                <div class="landlord-eyebrow">QUY TRÌNH THUÊ PHÒNG</div>
+                <h2 class="h4 fw-bold mb-1">Yêu cầu thuê phòng</h2>
+                <p class="text-secondary mb-0">Theo dõi yêu cầu thuộc các phòng bạn sở hữu và xử lý theo từng bước.</p>
+            </header>
+
+            <section class="request-stats" aria-label="Thống kê yêu cầu thuê">
+                <article class="request-stat"><span class="icon"><i class="bi bi-inboxes"></i></span><strong th:text="${totalRequests}">0</strong><span>Tổng yêu cầu</span></article>
+                <article class="request-stat"><span class="icon text-warning"><i class="bi bi-hourglass-split"></i></span><strong th:text="${pendingCount}">0</strong><span>Đang chờ duyệt</span></article>
+                <article class="request-stat"><span class="icon"><i class="bi bi-check2-circle"></i></span><strong th:text="${approvedCount}">0</strong><span>Đã duyệt</span></article>
+                <article class="request-stat"><span class="icon text-info"><i class="bi bi-pen"></i></span><strong th:text="${awaitingTenantCount}">0</strong><span>Chờ người thuê ký</span></article>
+                <article class="request-stat"><span class="icon text-success"><i class="bi bi-house-check"></i></span><strong th:text="${completedCount}">0</strong><span>Đã hoàn tất thuê</span></article>
+                <article class="request-stat"><span class="icon text-secondary"><i class="bi bi-x-circle"></i></span><strong th:text="${closedCount}">0</strong><span>Từ chối / đã hủy</span></article>
+            </section>
+
+            <form class="request-filter" method="get" th:action="@{/landlord/rental/requests}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label small fw-semibold" for="requestSearch">Tìm người thuê, mã phòng hoặc mã yêu cầu</label>
+                        <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input id="requestSearch" class="form-control" type="search" name="q" th:value="${keyword}" placeholder="Tên, P101, 123..."></div>
+                    </div>
+                    <div class="col-6 col-lg-2"><label class="form-label small fw-semibold" for="statusFilter">Trạng thái</label>
+                        <select id="statusFilter" class="form-select" name="status">
+                            <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Tất cả</option>
+                            <option value="PENDING_LANDLORD_REVIEW" th:selected="${selectedStatus == 'PENDING_LANDLORD_REVIEW'}">Chờ duyệt</option>
+                            <option value="APPROVED_BY_LANDLORD" th:selected="${selectedStatus == 'APPROVED_BY_LANDLORD'}">Đã duyệt</option>
+                            <option value="CONTRACT_SENT" th:selected="${selectedStatus == 'CONTRACT_SENT'}">Chờ ký hợp đồng</option>
+                            <option value="COMPLETED" th:selected="${selectedStatus == 'COMPLETED'}">Hoàn tất</option>
+                            <option value="REJECTED_BY_LANDLORD" th:selected="${selectedStatus == 'REJECTED_BY_LANDLORD'}">Từ chối</option>
+                            <option value="CANCELLED" th:selected="${selectedStatus == 'CANCELLED'}">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-lg-2"><label class="form-label small fw-semibold" for="roomFilter">Phòng</label>
+                        <select id="roomFilter" class="form-select" name="roomId"><option value="">Tất cả phòng</option>
+                            <option th:each="room : ${rooms}" th:value="${room.listingId}" th:selected="${selectedRoomId == room.listingId}" th:text="${room.roomCode + ' — ' + room.title}"></option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-lg-1"><label class="form-label small fw-semibold" for="fromDate">Từ ngày</label><input id="fromDate" class="form-control" type="date" name="from" th:value="${fromDate != null ? #temporals.format(fromDate, 'yyyy-MM-dd') : ''}"></div>
+                    <div class="col-6 col-lg-1"><label class="form-label small fw-semibold" for="toDate">Đến ngày</label><input id="toDate" class="form-control" type="date" name="to" th:value="${toDate != null ? #temporals.format(toDate, 'yyyy-MM-dd') : ''}"></div>
+                    <div class="col-12 col-lg-2 d-flex gap-2"><button class="btn btn-primary flex-grow-1" type="submit"><i class="bi bi-funnel me-1"></i>Lọc</button><a class="btn btn-outline-secondary" th:href="@{/landlord/rental/requests}" aria-label="Xóa bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a></div>
+                </div>
+            </form>
+
+            <section class="request-table-wrap">
+                <div class="table-responsive">
+                    <table class="table request-table">
+                        <thead><tr><th>Mã yêu cầu</th><th>Phòng</th><th>Người đăng ký</th><th>Điện thoại</th><th>Ngày nhận dự kiến</th><th>Số người</th><th>Giá thuê</th><th>Ngày gửi</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                        <tbody>
+                        <tr th:each="request : ${requests}">
+                            <td class="fw-semibold" th:text="${'#' + request.requestId}"></td>
+                            <td><div class="d-flex align-items-center gap-2"><img class="room-thumb" th:src="${request.room.imageUrl}" alt="Ảnh phòng"><div><strong th:text="${request.room.roomCode}"></strong><small class="d-block text-secondary text-truncate" style="max-width:180px" th:text="${request.room.title}"></small></div></div></td>
+                            <td><strong th:text="${request.fullName ?: request.user.fullName ?: request.user.username}"></strong><small class="d-block text-secondary" th:text="${'Tài khoản: ' + request.user.username}"></small></td>
+                            <td th:text="${request.phone ?: request.user.phone ?: '—'}"></td>
+                            <td th:text="${request.expectedMoveInDate != null ? #temporals.format(request.expectedMoveInDate,'dd/MM/yyyy') : '—'}"></td>
+                            <td th:text="${request.expectedOccupants != null ? request.expectedOccupants : '—'}"></td>
+                            <td class="text-nowrap" th:text="${request.room.price != null ? #numbers.formatDecimal(request.room.price,0,'COMMA',0,'POINT') + ' ₫' : '—'}"></td>
+                            <td class="text-nowrap" th:text="${request.requestDate != null ? #temporals.format(request.requestDate,'dd/MM/yyyy HH:mm') : '—'}"></td>
+                            <td><span class="request-status" th:classappend="${request.status == 'PENDING_LANDLORD_REVIEW' ? ' pending' : (request.status == 'COMPLETED' ? ' done' : (#lists.contains({'REJECTED_BY_LANDLORD','CANCELLED'}, request.status) ? ' closed' : ''))}" th:text="${request.statusLabel}"></span></td>
+                            <td><a class="btn btn-sm btn-outline-primary text-nowrap" th:href="@{/landlord/rental/requests/{id}(id=${request.requestId})}"><i class="bi bi-eye me-1"></i>Chi tiết</a></td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(requests)}"><td colspan="10" class="text-center text-secondary py-5"><i class="bi bi-inbox fs-2 d-block mb-2"></i>Không tìm thấy yêu cầu phù hợp.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 border-top" th:if="${totalPages > 1}" aria-label="Phân trang yêu cầu">
+                    <span class="small text-secondary" th:text="${'Trang ' + (currentPage + 1) + ' / ' + totalPages}"></span>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${!hasPrevious ? 'disabled' : ''}"><a class="page-link" th:href="@{/landlord/rental/requests(page=${currentPage - 1},status=${selectedStatus},roomId=${selectedRoomId},from=${fromDate},to=${toDate},q=${keyword})}">Trước</a></li>
+                        <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0,totalPages - 1)}" th:classappend="${pageNumber == currentPage ? 'active' : ''}"><a class="page-link" th:text="${pageNumber + 1}" th:href="@{/landlord/rental/requests(page=${pageNumber},status=${selectedStatus},roomId=${selectedRoomId},from=${fromDate},to=${toDate},q=${keyword})}"></a></li>
+                        <li class="page-item" th:classappend="${!hasNext ? 'disabled' : ''}"><a class="page-link" th:href="@{/landlord/rental/requests(page=${currentPage + 1},status=${selectedStatus},roomId=${selectedRoomId},from=${fromDate},to=${toDate},q=${keyword})}">Sau</a></li>
+                    </ul>
+                </nav>
+            </section>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

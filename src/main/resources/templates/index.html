@@ -246,11 +246,47 @@
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="d-flex gap-2 pt-2 border-top">
+                            <div class="d-flex gap-2 pt-2 border-top"
+                                 th:with="contactPhone=${room.managedRoom != null and room.managedRoom.building != null and room.managedRoom.building.contactPhone != null and !#strings.isEmpty(room.managedRoom.building.contactPhone) ? room.managedRoom.building.contactPhone : (room.createdBy != null ? room.createdBy.phone : null)}">
                                 <a th:href="@{/rooms/{id}(id=${room.listingId})}" class="btn btn-outline-primary flex-grow-1 py-2">
                                     <i class="bi bi-eye"></i> Chi tiết
                                 </a>
-                                <a th:if="${room.status == 'TRONG'}" href="tel:19006868" class="btn btn-primary px-3 py-2" title="Gọi liên hệ thuê ngay">
+                                <span sec:authorize="hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')"
+                                      th:if="${#lists.contains(pendingRentalListingIds, room.listingId)}"
+                                      class="flex-grow-1 text-center">
+                                    <span class="btn btn-outline-success w-100 py-2 disabled" aria-disabled="true">
+                                        <i class="bi bi-hourglass-split"></i> Đã gửi yêu cầu
+                                    </span>
+                                    <small class="d-block text-success mt-1"
+                                           th:text="${rentalStatusByListingId[room.listingId]}">Đang chờ chủ trọ xác nhận</small>
+                                </span>
+                                <button sec:authorize="hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')" th:if="${room.status == 'TRONG' and !#lists.contains(pendingRentalListingIds, room.listingId)}"
+                                        type="button" class="btn btn-primary flex-grow-1 py-2"
+                                        data-bs-toggle="modal" data-bs-target="#rentalRequestModal"
+                                        th:data-listing-id="${room.listingId}"
+                                        th:data-room-code="${room.roomCode}"
+                                        th:data-room-title="${room.title}"
+                                        th:data-room-price="${room.formattedPrice}"
+                                        th:data-max-occupants="${room.managedRoom != null and room.managedRoom.maxOccupants != null ? room.managedRoom.maxOccupants : 10}">
+                                    <i class="bi bi-send"></i> Đăng ký thuê phòng
+                                </button>
+                                <a sec:authorize="isAnonymous()" th:if="${room.status == 'TRONG'}" th:href="@{/login}"
+                                   class="btn btn-primary flex-grow-1 py-2">
+                                    <i class="bi bi-box-arrow-in-right"></i> Đăng nhập để đăng ký
+                                </a>
+                                <span sec:authorize="isAuthenticated() and !hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')" th:if="${room.status == 'TRONG'}"
+                                      class="btn btn-light flex-grow-1 py-2 text-muted disabled" aria-disabled="true">
+                                    Chỉ tài khoản người thuê được đăng ký
+                                </span>
+                                <span th:if="${room.status != 'TRONG' and !#lists.contains(pendingRentalListingIds, room.listingId)}"
+                                      class="btn btn-light flex-grow-1 py-2 text-muted disabled" aria-disabled="true">
+                                    Không còn trống
+                                </span>
+                                <span sec:authorize="hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')" th:if="${#lists.contains(pendingRentalListingIds, room.listingId)}"
+                                      class="visually-hidden">Yêu cầu đang chờ xử lý</span>
+                                <a th:if="${room.status == 'TRONG' and contactPhone != null and !#strings.isEmpty(contactPhone)}"
+                                   sec:authorize="isAnonymous()" th:href="|tel:${contactPhone}|"
+                                   class="btn btn-outline-primary px-3 py-2" title="Gọi chủ trọ">
                                     <i class="bi bi-telephone-fill"></i>
                                 </a>
                             </div>
@@ -303,6 +339,26 @@
                                     <a th:href="@{/rooms/{id}(id=${room.listingId})}" class="btn btn-sm btn-outline-primary px-3">
                                         <i class="bi bi-eye"></i> Xem
                                     </a>
+                                    <div sec:authorize="hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')"
+                                         th:if="${#lists.contains(pendingRentalListingIds, room.listingId)}">
+                                        <span class="btn btn-sm btn-outline-success disabled" aria-disabled="true">
+                                            <i class="bi bi-hourglass-split"></i> Đã gửi yêu cầu
+                                        </span>
+                                        <small class="d-block text-success mt-1"
+                                               th:text="${rentalStatusByListingId[room.listingId]}">Đang chờ chủ trọ xác nhận</small>
+                                    </div>
+                                    <button sec:authorize="hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')" th:if="${room.status == 'TRONG' and !#lists.contains(pendingRentalListingIds, room.listingId)}"
+                                            type="button" class="btn btn-sm btn-primary"
+                                            data-bs-toggle="modal" data-bs-target="#rentalRequestModal"
+                                            th:data-listing-id="${room.listingId}"
+                                            th:data-room-code="${room.roomCode}"
+                                            th:data-room-title="${room.title}"
+                                            th:data-room-price="${room.formattedPrice}"
+                                            th:data-max-occupants="${room.managedRoom != null and room.managedRoom.maxOccupants != null ? room.managedRoom.maxOccupants : 10}">
+                                        <i class="bi bi-send"></i> Đăng ký thuê
+                                    </button>
+                                    <a sec:authorize="isAnonymous()" th:if="${room.status == 'TRONG'}" th:href="@{/login}"
+                                       class="btn btn-sm btn-primary">Đăng nhập để đăng ký</a>
                                 </td>
                             </tr>
                         </tbody>
@@ -316,8 +372,99 @@
     <!-- Footer Fragment -->
     <div th:replace="~{layout/footer :: footer}"></div>
 
+    <div class="modal fade" id="rentalRequestModal" tabindex="-1" aria-labelledby="rentalRequestModalLabel" aria-hidden="true"
+         th:data-reopen-listing-id="${openRentalModalListingId}">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form th:action="@{/tenant/rental/request}" method="post">
+                    <input type="hidden" name="listingId" id="rentalListingId">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title fw-bold" id="rentalRequestModalLabel">Đăng ký thuê phòng</h5>
+                            <div class="small text-muted" id="rentalRoomSummary"></div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2 small">
+                            Thông tin liên hệ được lấy từ tài khoản của bạn. Chủ trọ sẽ nhận yêu cầu sau khi gửi.
+                        </div>
+                        <div class="mb-3">
+                            <label for="expectedMoveInDate" class="form-label fw-semibold">Ngày dự kiến nhận phòng</label>
+                            <input type="date" class="form-control" id="expectedMoveInDate"
+                                   name="expectedMoveInDate" th:value="${submittedExpectedMoveInDate}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="expectedOccupants" class="form-label fw-semibold">Số người dự kiến ở</label>
+                            <input type="number" class="form-control" id="expectedOccupants"
+                                   name="expectedOccupants" min="1"
+                                   th:value="${submittedExpectedOccupants != null ? submittedExpectedOccupants : 1}" required>
+                            <div class="form-text" id="occupantLimit"></div>
+                        </div>
+                        <div>
+                            <label for="rentalNote" class="form-label fw-semibold">Ghi chú</label>
+                            <textarea class="form-control" id="rentalNote" name="note" rows="3" maxlength="500"
+                                      th:text="${submittedRentalNote}"
+                                      placeholder="Thông tin thêm gửi chủ trọ (không bắt buộc)"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i> Gửi yêu cầu thuê
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/app.js}"></script>
+    <script>
+        (function () {
+            const modalElement = document.getElementById('rentalRequestModal');
+            if (!modalElement) return;
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            const listingIdInput = document.getElementById('rentalListingId');
+            const roomSummary = document.getElementById('rentalRoomSummary');
+            const occupantsInput = document.getElementById('expectedOccupants');
+            const occupantLimit = document.getElementById('occupantLimit');
+            const moveInDate = document.getElementById('expectedMoveInDate');
+            const today = new Date();
+            const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 10);
+            moveInDate.min = localToday;
+
+            function populate(button, preserveSubmittedValues) {
+                if (!button) return;
+                const maxOccupants = button.dataset.maxOccupants || '10';
+                listingIdInput.value = button.dataset.listingId;
+                roomSummary.textContent = button.dataset.roomCode + ' · ' + button.dataset.roomTitle
+                    + ' · ' + button.dataset.roomPrice + '/tháng';
+                occupantsInput.max = maxOccupants;
+                occupantLimit.textContent = 'Tối đa ' + maxOccupants + ' người.';
+                if (!preserveSubmittedValues) {
+                    occupantsInput.value = '1';
+                    moveInDate.value = '';
+                    document.getElementById('rentalNote').value = '';
+                }
+            }
+
+            modalElement.addEventListener('show.bs.modal', function (event) {
+                populate(event.relatedTarget, false);
+            });
+
+            const reopenListingId = modalElement.dataset.reopenListingId;
+            if (reopenListingId) {
+                const button = document.querySelector('[data-listing-id="' + reopenListingId + '"]');
+                if (button) {
+                    populate(button, true);
+                    modal.show();
+                }
+            }
+        })();
+    </script>
 </body>
 </html>

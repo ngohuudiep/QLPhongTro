@@ -4,6 +4,8 @@ import com.qlphongtro.entity.Contract;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
@@ -34,4 +36,15 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
     boolean existsForTenantAndRoom(@Param("username") String username, @Param("roomId") Integer roomId);
 
     List<Contract> findByStatus(String status);
+    List<Contract> findByTenantUser_UserIdOrderByContractIdDesc(Integer userId);
+    List<Contract> findByRoom_Building_Owner_UsernameOrderByStartDateDesc(String username);
+    Optional<Contract> findByRentalRequest_RequestId(Integer requestId);
+    boolean existsByContractCodeAndContractIdNot(String contractCode, Integer contractId);
+    boolean existsByRoom_RoomIdAndStatusIgnoreCase(Integer roomId, String status);
+    boolean existsByRoom_RoomIdAndStatusInAndContractIdNot(Integer roomId, List<String> statuses, Integer contractId);
+    long countByStatus(String status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Contract c WHERE c.contractId = :id")
+    Optional<Contract> findByIdForUpdate(@Param("id") Integer id);
 }

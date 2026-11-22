@@ -20,16 +20,17 @@ public interface IncidentRepository extends JpaRepository<Incident, Integer> {
 
     List<Incident> findByRoom_RoomIdAndRoom_Building_BuildingIdIn(Integer roomId, List<Integer> buildingIds);
 
-    @Query("select i from Incident i where i.reportedBy.user.username = :username")
+    @Query("select i from Incident i left join i.reportedBy rb left join i.tenant t left join t.user tu where rb.username = :username or tu.username = :username")
     List<Incident> findAllForTenant(@Param("username") String username);
 
-    @Query("select i from Incident i where i.incidentId = :incidentId and i.reportedBy.user.username = :username")
+    @Query("select i from Incident i left join i.reportedBy rb left join i.tenant t left join t.user tu where i.incidentId = :incidentId and (rb.username = :username or tu.username = :username)")
     Optional<Incident> findByIdAndTenantUsername(@Param("incidentId") Integer incidentId, @Param("username") String username);
 
-    @Query("select i from Incident i where i.room.roomId = :roomId and i.reportedBy.user.username = :username")
+    @Query("select i from Incident i left join i.reportedBy rb left join i.tenant t left join t.user tu where i.room.roomId = :roomId and (rb.username = :username or tu.username = :username)")
     List<Incident> findByRoomIdAndTenantUsername(@Param("roomId") Integer roomId, @Param("username") String username);
 
     List<Incident> findByPriority(String priority);
 
     List<Incident> findByStatus(String status);
+    List<Incident> findByReportedBy_UserIdOrderByReportedAtDesc(Integer userId);
 }

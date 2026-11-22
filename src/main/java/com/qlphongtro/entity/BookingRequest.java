@@ -1,17 +1,12 @@
 package com.qlphongtro.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
  * Entity ánh xạ bảng BookingRequests trong SQL Server.
- * Lưu yêu cầu đặt/giữ phòng từ khách hàng (role USER).
- *
- * Luồng nghiệp vụ:
- *   1. Khách click "Đăng ký thuê" trên trang chủ → tạo record PENDING
- *   2. Staff/Admin vào /staff/requests xem danh sách PENDING
- *   3. Staff bấm "Duyệt" → status = APPROVED, phòng tự đổi sang DA_THUE
- *   4. Staff bấm "Từ chối" → status = REJECTED, phòng vẫn TRONG
+ * Lưu yêu cầu đặt/giữ phòng từ khách hàng (role TENANT / USER).
  */
 @Entity
 @Table(name = "BookingRequests")
@@ -22,49 +17,48 @@ public class BookingRequest {
     @Column(name = "request_id")
     private Integer requestId;
 
-    /**
-     * Người dùng gửi yêu cầu - quan hệ N-1 với Users.
-     * Lấy từ SecurityContextHolder khi user đăng nhập click "Đăng ký thuê".
-     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /**
-     * Phòng muốn đặt - quan hệ N-1 với RoomListings.
-     * Chỉ phòng có status TRONG mới được đặt.
-     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "room_id", nullable = false)
     private RoomListing room;
 
-    /** Thời điểm gửi yêu cầu - tự động set khi tạo mới */
     @Column(name = "request_date", nullable = false)
     private LocalDateTime requestDate;
 
-    /**
-     * Trạng thái xử lý yêu cầu:
-     *   PENDING  - Chờ Staff/Admin xem xét
-     *   APPROVED - Đã duyệt, phòng đổi sang DA_THUE tự động
-     *   REJECTED - Đã từ chối, phòng vẫn TRONG
-     */
-    @Column(name = "status", nullable = false, length = 15)
+    @Column(name = "status", nullable = false, length = 30)
     private String status = "PENDING";
 
-    /** Ghi chú từ Staff khi duyệt hoặc từ chối */
+    @Column(name = "full_name", length = 150, columnDefinition = "NVARCHAR(150)")
+    private String fullName;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "id_number", length = 20)
+    private String idNumber;
+
+    @Column(name = "expected_occupants")
+    private Short expectedOccupants;
+
+    @Column(name = "expected_move_in_date")
+    private LocalDate expectedMoveInDate;
+
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
     @Column(name = "note", columnDefinition = "NVARCHAR(500)")
     private String note;
 
-    /** Staff/Admin xử lý yêu cầu này - nullable (chưa xử lý thì null) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "processed_by_user_id")
     private User processedBy;
 
-    /** Thời điểm Staff xử lý yêu cầu (duyệt hoặc từ chối) */
     @Column(name = "processed_date")
     private LocalDateTime processedDate;
 
-    /** Tự động gán thời gian hiện tại khi tạo mới */
     @PrePersist
     public void prePersist() {
         if (this.requestDate == null) {
@@ -98,6 +92,24 @@ public class BookingRequest {
     public String getStatus()                      { return status; }
     public void setStatus(String status)           { this.status = status; }
 
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getIdNumber() { return idNumber; }
+    public void setIdNumber(String idNumber) { this.idNumber = idNumber; }
+
+    public Short getExpectedOccupants() { return expectedOccupants; }
+    public void setExpectedOccupants(Short expectedOccupants) { this.expectedOccupants = expectedOccupants; }
+
+    public LocalDate getExpectedMoveInDate() { return expectedMoveInDate; }
+    public void setExpectedMoveInDate(LocalDate expectedMoveInDate) { this.expectedMoveInDate = expectedMoveInDate; }
+
+    public LocalDateTime getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(LocalDateTime expiresAt) { this.expiresAt = expiresAt; }
+
     public String getNote()                        { return note; }
     public void setNote(String note)               { this.note = note; }
 
@@ -111,6 +123,12 @@ public class BookingRequest {
     public String getStatusLabel() {
         if (status == null) return "Không xác định";
         return switch (status) {
+            case "PENDING_LANDLORD_REVIEW" -> "Đang chờ chủ trọ xác nhận";
+            case "APPROVED_BY_LANDLORD" -> "Đã duyệt — chờ gửi hợp đồng";
+            case "CONTRACT_SENT" -> "Đang chờ người thuê ký";
+            case "COMPLETED" -> "Đã hoàn tất thuê";
+            case "REJECTED_BY_LANDLORD" -> "Đã từ chối";
+            case "CANCELLED" -> "Đã hủy";
             case "PENDING"  -> "Chờ duyệt";
             case "APPROVED" -> "Đã duyệt";
             case "REJECTED" -> "Đã từ chối";

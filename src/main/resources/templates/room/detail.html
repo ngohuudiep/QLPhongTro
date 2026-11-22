@@ -80,8 +80,10 @@
                                     <span th:text="${room.statusLabel}">Còn trống</span>
                                 </span>
                                 <h3 class="fw-bold mb-1" th:text="${room.title}">Phòng Studio Ban công thoáng mát</h3>
-                                <div class="text-muted small">
-                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> Khu đô thị Đại học, Quận Thủ Đức, TP. Hồ Chí Minh
+                                <div class="text-muted small"
+                                     th:if="${room.managedRoom != null and room.managedRoom.building != null}">
+                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                                    <span th:text="${room.managedRoom.building.address + (room.managedRoom.building.city != null ? ', ' + room.managedRoom.building.city : '')}"></span>
                                 </div>
                             </div>
                             <div class="text-lg-end">
@@ -107,8 +109,8 @@
                         </div>
 
                         <!-- Amenities Section -->
-                        <h5 class="fw-bold mb-3"><i class="bi bi-stars text-warning me-2"></i>Tiện nghi & Dịch vụ đi kèm</h5>
-                        <div class="row g-2 mb-4">
+                        <h5 th:if="${!#lists.isEmpty(room.amenityList)}" class="fw-bold mb-3"><i class="bi bi-stars text-warning me-2"></i>Tiện nghi & Dịch vụ đi kèm</h5>
+                        <div th:if="${!#lists.isEmpty(room.amenityList)}" class="row g-2 mb-4">
                             <div th:each="amenity : ${room.amenityList}" class="col-md-4 col-sm-6">
                                 <div class="p-2 border rounded-3 d-flex align-items-center gap-2 bg-card">
                                     <i class="bi bi-check-circle-fill text-success"></i>
@@ -132,34 +134,50 @@
                     <div class="booking-sidebar-card card-modern p-4">
                         <h5 class="fw-bold mb-3">Liên hệ xem phòng</h5>
                         <p class="text-muted small mb-4">
-                            Bạn quan tâm phòng này? Hãy gọi hotline hoặc gửi tin nhắn để được hẹn giờ xem phòng trực tiếp miễn phí.
+                            Liên hệ trực tiếp với chủ trọ để hỏi thông tin và hẹn xem phòng.
                         </p>
 
-                        <!-- Action Buttons -->
-                        <div class="d-flex flex-column gap-2 mb-4">
-                            <a href="tel:19006868" class="btn btn-primary py-2 w-100 fs-6">
-                                <i class="bi bi-telephone-fill"></i> Gọi ngay: 1900 6868
+                        <div class="d-flex flex-column gap-2 mb-4"
+                             th:with="contactPhone=${room.managedRoom != null and room.managedRoom.building != null and room.managedRoom.building.contactPhone != null and !#strings.isEmpty(room.managedRoom.building.contactPhone) ? room.managedRoom.building.contactPhone : (room.createdBy != null ? room.createdBy.phone : null)}">
+                            <a th:if="${contactPhone != null and !#strings.isEmpty(contactPhone)}"
+                               th:href="|tel:${contactPhone}|"
+                               class="btn btn-outline-primary py-2 w-100">
+                                <i class="bi bi-telephone-fill"></i> <span th:text="${contactPhone}">Số điện thoại chủ trọ</span>
                             </a>
-                            <a href="https://zalo.me" target="_blank" class="btn btn-outline-primary py-2 w-100">
-                                <i class="bi bi-chat-dots-fill"></i> Nhắn tin qua Zalo
+                            <span th:unless="${contactPhone != null and !#strings.isEmpty(contactPhone)}"
+                                  class="text-muted small">Chủ trọ chưa cập nhật số điện thoại liên hệ.</span>
+                            <a sec:authorize="hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')"
+                               th:if="${room.status == 'TRONG'}"
+                               th:href="@{/tenant/rental/request/{listingId}(listingId=${room.listingId})}"
+                               class="btn btn-primary py-2 w-100">
+                                <i class="bi bi-send me-1"></i> Đăng ký thuê phòng này
                             </a>
+                            <a sec:authorize="isAnonymous()" th:if="${room.status == 'TRONG'}"
+                               th:href="@{/login}" class="btn btn-primary py-2 w-100">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập để đăng ký
+                            </a>
+                            <span sec:authorize="isAuthenticated() and !hasAnyRole('TENANT', 'NGUOITHUE', 'NGUOI_THUE')"
+                                  th:if="${room.status == 'TRONG'}" class="text-muted small">
+                                Chỉ tài khoản người thuê được đăng ký.
+                            </span>
+                            <span th:if="${room.status != 'TRONG'}" class="text-muted small">
+                                Phòng hiện không còn trống.
+                            </span>
                         </div>
 
-                        <!-- Landlord Info -->
                         <div class="border-top pt-3">
                             <div class="d-flex align-items-center gap-3 mb-3">
                                 <div class="rounded-circle bg-teal-100 text-teal-800 d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; font-size: 1.2rem; background: rgba(13,148,136,0.15); color: #0d9488;">
                                     <i class="bi bi-person-badge"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">Ban Quản Lý QLPhongTro</div>
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Chủ trọ xác thực</span>
+                                    <div class="fw-bold"
+                                         th:text="${room.createdBy != null and room.createdBy.fullName != null ? room.createdBy.fullName : 'Chủ trọ'}">Chủ trọ</div>
+                                    <span class="text-muted small">Người đăng tin</span>
                                 </div>
                             </div>
                             <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-0">
-                                <li><i class="bi bi-clock me-2 text-primary"></i> Giờ xem phòng: 8h00 - 20h00 hàng ngày</li>
-                                <li><i class="bi bi-shield-check me-2 text-primary"></i> Hợp đồng minh bạch, đặt cọc an toàn</li>
-                                <li><i class="bi bi-key me-2 text-primary"></i> Bàn giao chìa khóa & mật khẩu vân tay ngay</li>
+                                <li><i class="bi bi-info-circle me-2 text-primary"></i> Trao đổi điều khoản và thời gian xem phòng trực tiếp với chủ trọ.</li>
                             </ul>
                         </div>
 

@@ -36,6 +36,9 @@ class PublicRoomViewTest {
     @MockBean
     private CustomUserDetailsService userDetailsService;
 
+    @MockBean
+    private com.qlphongtro.service.RentalWorkflowService rentalWorkflowService;
+
     @Test
     void rentedRoomDetailDoesNotExposeTenantIdentityOrLeaseDates() throws Exception {
         RoomListing room = new RoomListing();
