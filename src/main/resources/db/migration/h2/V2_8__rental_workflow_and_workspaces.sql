@@ -1,8 +1,8 @@
 -- ============================================================================
--- V2_8__rental_workflow_and_workspaces.sql
+-- V2_8__rental_workflow_and_workspaces.sql (H2)
 -- Thêm các bảng và cột phục vụ Workspace (Admin, Landlord, Tenant),
 -- Rental Workflow và Contract Termination & Settlement.
--- Cú pháp ANSI SQL tương thích cả SQL Server và H2
+-- Cú pháp ANSI SQL tương thích H2
 -- ============================================================================
 
 -- 1. Bổ sung các cột cho bảng users
