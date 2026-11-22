@@ -216,6 +216,9 @@ public class TenantPortalServiceImpl implements TenantPortalService {
         Incident incident = new Incident();
         incident.setRoom(contract.getRoom());
         incident.setReportedBy(user);
+        if (tenant != null) {
+            incident.setTenant(tenant);
+        }
         incident.setTitle(request.getTitle().trim());
         incident.setDescription(request.getDescription().trim());
         incident.setPriority(priority);

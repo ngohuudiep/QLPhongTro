@@ -111,4 +111,39 @@ class TenantPortalServiceImplTest {
 
         assertEquals(List.of(contract), activeContracts);
     }
+
+    @Test
+    void tenantCanReportIncidentWithDescription() {
+        when(tenantRepository.findByUser_UserId(7)).thenReturn(Optional.of(tenant));
+        Room room = new Room();
+        room.setRoomId(101);
+        Contract contract = new Contract();
+        contract.setContractId(801);
+        contract.setTenantUser(tenantUser);
+        contract.setRoom(room);
+        contract.setStatus("TENANT_ACCEPTED");
+        contract.setStartDate(LocalDate.now().minusDays(10));
+        contract.setEndDate(LocalDate.now().plusMonths(6));
+        when(contractRepository.findByTenantUser_UserIdOrderByContractIdDesc(7))
+                .thenReturn(List.of(contract));
+
+        com.qlphongtro.dto.IncidentReportRequest request = new com.qlphongtro.dto.IncidentReportRequest();
+        request.setContractId(801);
+        request.setTitle("Hỏng điều hòa");
+        request.setDescription("Điều hòa không mát, kêu to.");
+        request.setPriority("HIGH");
+
+        when(incidentRepository.save(any(Incident.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Incident saved = service.reportIncident("tenant-a", request);
+
+        assertEquals("Hỏng điều hòa", saved.getTitle());
+        assertEquals("Điều hòa không mát, kêu to.", saved.getDescription());
+        assertEquals("HIGH", saved.getPriority());
+        assertEquals("Tiếp nhận", saved.getStatus());
+        assertEquals(room, saved.getRoom());
+        assertEquals(tenantUser, saved.getReportedBy());
+        assertEquals(tenant, saved.getTenant());
+        verify(incidentRepository).save(any(Incident.class));
+    }
 }
