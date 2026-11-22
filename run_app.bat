@@ -3,9 +3,9 @@ setlocal
 chcp 65001 >nul
 title QLPhongTro - Demo
 
-set "JAVA_HOME=D:\Java\jdk-21.0.11"
+set "JAVA_HOME=C:\Program Files\Java\jdk-17"
 if not exist "%JAVA_HOME%\bin\java.exe" (
-    echo [LOI] Khong tim thay JDK 21 tai "%JAVA_HOME%".
+    echo [LOI] Khong tim thay JDK tai "%JAVA_HOME%".
     pause
     exit /b 1
 )
