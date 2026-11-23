@@ -24,6 +24,7 @@ class ProtectedRoutesMockMvcTest {
     @MockBean RoomListingService roomListingService;
     @MockBean CustomUserDetailsService userDetailsService;
     @MockBean com.qlphongtro.service.RentalWorkflowService rentalWorkflowService;
+    @MockBean com.qlphongtro.service.ReviewService reviewService;
 
     @ParameterizedTest
     @ValueSource(strings = {

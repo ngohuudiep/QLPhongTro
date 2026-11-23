@@ -33,9 +33,19 @@
                         <i class="bi bi-grid me-1"></i> Tìm phòng trọ
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/ranking}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/ranking' ? 'active' : ''}">
+                        <i class="bi bi-trophy-fill text-warning me-1"></i> Bảng xếp hạng
+                    </a>
+                </li>
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                     <a class="nav-link" th:href="@{/admin/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/dashboard' ? 'active' : ''}">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard Admin
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link" th:href="@{/admin/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/reviews' ? 'active' : ''}">
+                        <i class="bi bi-shield-check me-1"></i> Duyệt đánh giá
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasAnyRole('LANDLORD', 'STAFF')">
@@ -43,9 +53,19 @@
                         <i class="bi bi-building me-1"></i> Dashboard Chủ trọ
                     </a>
                 </li>
+                <li class="nav-item" sec:authorize="hasAnyRole('LANDLORD', 'STAFF')">
+                    <a class="nav-link" th:href="@{/landlord/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/landlord/reviews' ? 'active' : ''}">
+                        <i class="bi bi-star-half text-warning me-1"></i> Đánh giá & Phản hồi
+                    </a>
+                </li>
                 <li class="nav-item" sec:authorize="hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')">
                     <a class="nav-link" th:href="@{/tenant/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/tenant/dashboard' ? 'active' : ''}">
                         <i class="bi bi-person-badge me-1"></i> Dashboard Người thuê
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')">
+                    <a class="nav-link" th:href="@{/tenant/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/tenant/reviews' ? 'active' : ''}">
+                        <i class="bi bi-star-fill text-warning me-1"></i> Đánh giá phòng
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">

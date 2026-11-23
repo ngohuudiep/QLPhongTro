@@ -35,6 +35,9 @@ class HomeControllerViewTest {
     @MockBean
     private RentalWorkflowService rentalWorkflowService;
 
+    @MockBean
+    private com.qlphongtro.service.ReviewService reviewService;
+
     @Test
     void publicRoomPageDoesNotRenderTenantPersonalData() throws Exception {
         RoomListing room = new RoomListing();

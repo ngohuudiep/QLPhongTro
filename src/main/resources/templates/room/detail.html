@@ -125,6 +125,47 @@
                             Phòng đầy đủ nội thất cao cấp: máy lạnh Inverter, tủ lạnh 2 cánh, giường nệm cao su, tủ quần áo âm tường. Ban công đón ánh sáng tự nhiên.
                         </p>
 
+                        <!-- Reviews & Ratings Section -->
+                        <div class="card-modern p-4 mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0"><i class="bi bi-chat-heart text-danger me-2"></i>Đánh giá từ khách thuê</h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fs-4 fw-bold text-warning" th:text="${room.averageRating != null and room.averageRating > 0 ? room.averageRating : '—'}">4.8</span>
+                                    <div class="text-warning small">
+                                        <i class="bi bi-star-fill"></i>
+                                    </div>
+                                    <span class="text-muted small" th:text="${'(' + (room.totalReviews ?: 0) + ' đánh giá)'}">(0 đánh giá)</span>
+                                </div>
+                            </div>
+
+                            <div th:if="${reviews == null or reviews.empty}" class="text-center py-4 text-muted bg-light rounded-3">
+                                <i class="bi bi-chat-quote fs-2 text-secondary d-block mb-1"></i>
+                                <span>Phòng này chưa có lượt đánh giá nào từ khách thuê.</span>
+                            </div>
+
+                            <div th:each="rev : ${reviews}" class="border-bottom py-3">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div class="fw-semibold text-dark" th:text="${rev.tenantUser.fullName}">Khách thuê</div>
+                                    <div class="text-warning small">
+                                        <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                            <i class="bi" th:classappend="${i <= rev.rating ? 'bi-star-fill' : 'bi-star'}"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                <p class="mb-2 text-secondary small" th:text="${rev.comment}">Phòng ở thoáng mát, sạch sẽ.</p>
+                                <div class="text-muted" style="font-size: 0.75rem;" th:text="${#temporals.format(rev.createdAt, 'dd/MM/yyyy HH:mm')}"></div>
+
+                                <!-- Chủ trọ phản hồi -->
+                                <div th:if="${rev.replyComment != null}" class="bg-light border-start border-3 border-primary p-2 rounded mt-2 ms-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong class="text-primary" style="font-size: 0.8rem;"><i class="bi bi-reply-fill"></i> Phản hồi từ Chủ trọ:</strong>
+                                        <span class="text-muted" style="font-size: 0.7rem;" th:text="${#temporals.format(rev.repliedAt, 'dd/MM/yyyy')}"></span>
+                                    </div>
+                                    <p class="mb-0 text-dark" style="font-size: 0.8rem;" th:text="${rev.replyComment}"></p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                 </div>
@@ -174,6 +215,11 @@
                                     <div class="fw-bold"
                                          th:text="${room.createdBy != null and room.createdBy.fullName != null ? room.createdBy.fullName : 'Chủ trọ'}">Chủ trọ</div>
                                     <span class="text-muted small">Người đăng tin</span>
+                                    <div th:if="${(room.createdBy != null and room.createdBy.topLandlord) or (room.managedRoom != null and room.managedRoom.building != null and room.managedRoom.building.owner != null and room.managedRoom.building.owner.topLandlord)}">
+                                        <span class="badge bg-warning text-dark mt-1">
+                                            <i class="bi bi-patch-check-fill text-primary"></i> Chủ trọ uy tín
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-0">

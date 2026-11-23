@@ -105,6 +105,10 @@ public class RoomListingServiceImpl implements RoomListingService {
             sort = Sort.by(Sort.Direction.DESC, "area");
         } else if ("newest".equalsIgnoreCase(sortBy)) {
             sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        } else if ("rating_desc".equalsIgnoreCase(sortBy)) {
+            sort = Sort.by(Sort.Direction.DESC, "averageRating").and(Sort.by(Sort.Direction.DESC, "totalReviews"));
+        } else if ("reviews_desc".equalsIgnoreCase(sortBy)) {
+            sort = Sort.by(Sort.Direction.DESC, "totalReviews").and(Sort.by(Sort.Direction.DESC, "averageRating"));
         }
 
         // 3. Chuẩn hóa bộ lọc

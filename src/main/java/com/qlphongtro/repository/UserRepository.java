@@ -65,4 +65,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
            "LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "ORDER BY u.userId DESC")
     List<User> searchAccountsByRole(@Param("roleName") String roleName, @Param("keyword") String keyword);
+
+    @Query("SELECT u FROM User u JOIN FETCH u.role r WHERE UPPER(r.roleName) IN ('LANDLORD', 'ROLE_LANDLORD') AND UPPER(u.accountStatus) = 'APPROVED' ORDER BY u.topLandlord DESC, u.averageRating DESC, u.totalReviews DESC")
+    List<User> findTopLandlords();
 }

@@ -96,6 +96,12 @@ public class RoomListing {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "total_reviews")
+    private Integer totalReviews = 0;
+
     /** Người tạo (Chủ trọ) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
@@ -264,5 +270,21 @@ public class RoomListing {
         if (price == null) return "0 đ";
         DecimalFormat df = new DecimalFormat("###,###,###");
         return df.format(price) + " đ";
+    }
+
+    public BigDecimal getAverageRating() {
+        return averageRating != null ? averageRating : BigDecimal.ZERO;
+    }
+
+    public void setAverageRating(BigDecimal averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Integer getTotalReviews() {
+        return totalReviews != null ? totalReviews : 0;
+    }
+
+    public void setTotalReviews(Integer totalReviews) {
+        this.totalReviews = totalReviews;
     }
 }

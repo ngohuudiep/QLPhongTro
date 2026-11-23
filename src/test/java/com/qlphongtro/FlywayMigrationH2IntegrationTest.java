@@ -15,9 +15,12 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Kiểm thử tích hợp Flyway Migration + Hibernate ddl-auto=validate trên H2 in-memory:
- * 1. Đảm bảo Flyway tự động chạy tuần tự các migration từ V1 đến V2_7 trên DB trắng.
- * 2. Đảm bảo Hibernate ddl-auto=validate xác nhận toàn bộ 18 JPA Entities khớp hoàn toàn với schema của Flyway.
+ * Kiểm thử tích hợp Flyway Migration + Hibernate ddl-auto=validate trên H2
+ * in-memory:
+ * 1. Đảm bảo Flyway tự động chạy tuần tự các migration từ V1 đến V2_7 trên DB
+ * trắng.
+ * 2. Đảm bảo Hibernate ddl-auto=validate xác nhận toàn bộ 18 JPA Entities khớp
+ * hoàn toàn với schema của Flyway.
  * 3. Kiểm tra danh mục các phiên bản migration đã áp dụng thành công.
  */
 @SpringBootTest
@@ -51,8 +54,8 @@ class FlywayMigrationH2IntegrationTest {
                 .map(info -> info.getVersion().getVersion())
                 .toList();
 
-        // Xác nhận đã áp dụng đầy đủ 15 migration (1, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14)
-        assertThat(versions).containsExactly("1", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10", "2.11", "2.12", "2.13", "2.14");
+        // Xác nhận đã áp dụng đầy đủ 16 migration (1, 2.1 - 2.15)
+        assertThat(versions).containsExactly("1", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10", "2.11", "2.12", "2.13", "2.14", "2.15");
 
         // Xác nhận trạng thái của từng migration đều thành công
         for (MigrationInfo info : applied) {

@@ -3,6 +3,7 @@ package com.qlphongtro.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,6 +98,15 @@ public class User {
 
     @Column(name = "registered_at")
     private LocalDateTime registeredAt;
+
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "total_reviews")
+    private Integer totalReviews = 0;
+
+    @Column(name = "is_top_landlord")
+    private boolean topLandlord = false;
 
     /** Vai trò người dùng (ADMIN, STAFF, USER, LANDLORD, TENANT) */
     @ManyToOne(fetch = FetchType.EAGER)
@@ -236,6 +246,15 @@ public class User {
     public void setStaffBuildingAssignments(List<StaffBuildingAssignment> staffBuildingAssignments) {
         this.staffBuildingAssignments = staffBuildingAssignments;
     }
+
+    public BigDecimal getAverageRating() { return averageRating != null ? averageRating : BigDecimal.ZERO; }
+    public void setAverageRating(BigDecimal averageRating) { this.averageRating = averageRating; }
+
+    public Integer getTotalReviews() { return totalReviews != null ? totalReviews : 0; }
+    public void setTotalReviews(Integer totalReviews) { this.totalReviews = totalReviews; }
+
+    public boolean isTopLandlord() { return topLandlord; }
+    public void setTopLandlord(boolean topLandlord) { this.topLandlord = topLandlord; }
 
     @Override
     public String toString() {

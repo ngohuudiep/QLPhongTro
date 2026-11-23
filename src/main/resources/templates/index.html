@@ -154,6 +154,8 @@
                             <option value="price_desc" th:selected="${selectedSort == 'price_desc'}">Giá: Cao đến Thấp</option>
                             <option value="area_desc" th:selected="${selectedSort == 'area_desc'}">Diện tích rộng nhất</option>
                             <option value="newest" th:selected="${selectedSort == 'newest'}">Mới đăng gần đây</option>
+                            <option value="rating_desc" th:selected="${selectedSort == 'rating_desc'}">Đánh giá cao nhất (Sao)</option>
+                            <option value="reviews_desc" th:selected="${selectedSort == 'reviews_desc'}">Nhiều đánh giá nhất</option>
                         </select>
                     </div>
 
@@ -228,11 +230,17 @@
                                 <span><i class="bi bi-aspect-ratio me-1"></i> <span th:text="${room.area}">25</span> m²</span>
                             </div>
 
-                            <h5 class="fw-bold mb-2 text-truncate-2">
+                            <h5 class="fw-bold mb-1 text-truncate-2">
                                 <a th:href="@{/rooms/{id}(id=${room.listingId})}" class="text-decoration-none text-main hover-primary" th:text="${room.title}">
                                     Phòng Studio Ban công thoáng mát, Full nội thất
                                 </a>
                             </h5>
+
+                            <div class="d-flex align-items-center gap-1 text-warning small mb-2">
+                                <i class="bi bi-star-fill"></i>
+                                <strong class="text-dark" th:text="${room.averageRating != null and room.averageRating > 0 ? room.averageRating : '—'}">4.8</strong>
+                                <span class="text-muted" th:text="${'(' + (room.totalReviews ?: 0) + ' đánh giá)'}">(0 đánh giá)</span>
+                            </div>
 
                             <p class="text-muted small text-truncate-2 mb-3" th:text="${room.description}">
                                 Phòng đầy đủ nội thất cao cấp: máy lạnh Inverter, tủ lạnh 2 cánh, giường nệm cao su.

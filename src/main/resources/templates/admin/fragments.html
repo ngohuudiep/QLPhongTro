@@ -20,6 +20,7 @@
     <nav class="admin-nav">
         <a th:href="@{/admin/accounts/landlords}" th:classappend="${activePage == 'landlords' ? ' active' : ''}"><i class="bi bi-house-gear"></i> Tài khoản chủ trọ</a>
         <a th:href="@{/admin/accounts/tenants}" th:classappend="${activePage == 'tenants' ? ' active' : ''}"><i class="bi bi-people"></i> Tài khoản người thuê</a>
+        <a th:href="@{/admin/reviews}" th:classappend="${activePage == 'reviews' ? ' active' : ''}"><i class="bi bi-shield-check"></i> Kiểm duyệt đánh giá</a>
         <a th:href="@{/admin/rooms}" th:classappend="${activePage == 'rooms' ? ' active' : ''}"><i class="bi bi-door-open"></i> Bài đăng phòng</a>
         <a th:href="@{/admin/buildings}" th:classappend="${activePage == 'buildings' ? ' active' : ''}"><i class="bi bi-buildings"></i> Khu trọ quản lý</a>
         <a th:href="@{/admin/managed-rooms}" th:classappend="${activePage == 'managed-rooms' ? ' active' : ''}"><i class="bi bi-key"></i> Phòng quản lý</a>

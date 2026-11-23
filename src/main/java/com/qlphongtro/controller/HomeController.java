@@ -26,11 +26,19 @@ public class HomeController {
 
     private final RoomListingService roomListingService;
     private final RentalWorkflowService rentalWorkflowService;
+    private final com.qlphongtro.service.ReviewService reviewService;
+
+    public HomeController(RoomListingService roomListingService, RentalWorkflowService rentalWorkflowService) {
+        this(roomListingService, rentalWorkflowService, null);
+    }
 
     @Autowired
-    public HomeController(RoomListingService roomListingService, RentalWorkflowService rentalWorkflowService) {
+    public HomeController(RoomListingService roomListingService,
+                          RentalWorkflowService rentalWorkflowService,
+                          @org.springframework.beans.factory.annotation.Autowired(required = false) com.qlphongtro.service.ReviewService reviewService) {
         this.roomListingService = roomListingService;
         this.rentalWorkflowService = rentalWorkflowService;
+        this.reviewService = reviewService;
     }
 
     @GetMapping("/")
@@ -106,6 +114,10 @@ public class HomeController {
             return "redirect:/rooms/list";
         }
         model.addAttribute("room", room);
+        Integer physicalRoomId = room.getManagedRoom() != null ? room.getManagedRoom().getRoomId() : (room.getRoom() != null ? room.getRoom().getRoomId() : null);
+        List<com.qlphongtro.entity.Review> reviews = (reviewService != null && physicalRoomId != null) ? reviewService.getVisibleReviewsForRoom(physicalRoomId) : List.of();
+        model.addAttribute("reviews", reviews);
+
         List<RoomListing> similarRooms = roomListingService.getAvailableRooms().stream()
                 .filter(r -> !r.getListingId().equals(id))
                 .limit(3)
