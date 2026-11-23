@@ -1,108 +1,98 @@
 # Hướng dẫn chạy demo QLPhongTro trên Windows
 
-## 1. Yêu cầu
+## 1. Yêu cầu môi trường
 
-- Windows 64-bit.
-- JDK 21 tại `D:\Java\jdk-21.0.11`.
-- Maven 3.9.6 trong `PATH`.
-- SQL Server đang chạy trên `localhost:1433`, có database `ApartmentDB`.
-- Tài khoản Windows hiện tại được cấp quyền cần thiết trên `ApartmentDB`.
-- Mạng Internet ở lần chạy đầu để tải thư viện JDBC Windows Authentication chính thức của Microsoft.
+- **Hệ điều hành:** Windows 64-bit.
+- **Java:** JDK 17 cài đặt tại `C:\Program Files\Java\jdk-17`.
+- **Maven:** Apache Maven 3.9.6 (hoặc sử dụng wrapper `scripts\mvn17.cmd`).
+- **Node.js:** Node.js v18+ hoặc v20+ (để chạy bộ script kiểm chứng live-smoke).
+- **Cơ sở dữ liệu:** SQL Server (Instance `LAPTOP-12OGD3V1\SQLEXPRESS01`), port **1435**, Database **`ApartmentDB_v2`** (Collation: `Vietnamese_CI_AS`).
+- **Thư viện Windows Auth:** Microsoft mssql-jdbc_auth x64 (được script `install_sqlserver_auth.ps1` tự động cài đặt).
 
-Ứng dụng không tự tạo tài khoản hoặc dữ liệu demo. Dữ liệu hiện có được giữ nguyên. Không chạy `setup_db.ps1` để khởi tạo database trên dữ liệu đang sử dụng.
+---
 
-## 2. Kiểm tra Java và Maven
+## 2. Tài khoản Demo có sẵn
 
-Mở CMD:
+Hệ thống đã được seed sẵn 3 tài khoản mẫu tương ứng với 3 vai trò (mật khẩu BCrypt chuẩn):
 
-```bat
-set "JAVA_HOME=D:\Java\jdk-21.0.11"
-set "PATH=%JAVA_HOME%\bin;%PATH%"
-java -version
-mvn -version
+| Vai trò | Username | Mật khẩu mặc định | Trang chuyển hướng sau đăng nhập |
+|---|---|---|---|
+| **Quản trị viên (Admin)** | `admin` | `Admin@123456` | `/admin/dashboard` |
+| **Chủ trọ (Landlord)** | `chutro` | `Landlord@123456` | `/landlord/dashboard` |
+| **Khách thuê (Tenant)** | `nguoithue` | `Tenant@123456` | `/tenant/dashboard` |
+
+> *Ghi chú:* Khi người dùng đăng ký tài khoản chủ trọ mới từ trang `/register`, tài khoản sẽ ở trạng thái chờ duyệt (`PENDING_APPROVAL`) và cần tài khoản `admin` đăng nhập vào `/admin/landlord-registrations` để phê duyệt thì chủ trọ mới có thể đăng nhập.
+
+---
+
+## 3. Khởi động ứng dụng
+
+Mở PowerShell hoặc Command Prompt tại thư mục dự án và chạy:
+
+```cmd
+.\run_app.bat
 ```
 
-Kết quả cần hiển thị Java 21.0.11 và Maven 3.9.6.
+Launcher `run_app.bat` sẽ tự động:
+1. Thiết lập `JAVA_HOME=C:\Program Files\Java\jdk-17`.
+2. Kiểm tra kết nối TCP/IP tới SQL Server tại `localhost:1435`.
+3. Tải/kiểm tra thư viện Microsoft JDBC Auth DLL (`mssql-jdbc_auth-12.4.2.x64.dll`).
+4. Kiểm tra cổng `8080` (tránh xung đột tiến trình).
+5. Khởi động Spring Boot với profile `windows-auth`.
+6. Flyway tự động kiểm tra và áp dụng các migration từ `V1` đến `V2_14`.
 
-## 3. Kiểm tra SQL Server
+Khi xuất hiện dòng thông báo:
+```text
+Started QlphongtroApplication in ... seconds
+```
+Mở trình duyệt truy cập:
+- **Trang chủ / Danh sách phòng:** [http://localhost:8080/](http://localhost:8080/)
+- **Đăng nhập:** [http://localhost:8080/login](http://localhost:8080/login)
 
-Xác nhận dịch vụ SQL Server đang chạy và TCP/IP bật tại cổng 1433. Có thể kiểm tra kết nối Windows Authentication bằng:
+---
 
-```bat
-sqlcmd -S localhost -E -d ApartmentDB -Q "SELECT DB_NAME()"
+## 4. Các lệnh kiểm chứng tự động (Live Verification)
+
+### 4.1. Kiểm chứng đăng nhập 3 vai trò (Live-Smoke Test)
+Chạy khi ứng dụng đang mở tại port 8080:
+
+```powershell
+node runtime-tests/live-smoke/admin.mjs
+node runtime-tests/live-smoke/landlord.mjs
+node runtime-tests/live-smoke/tenant.mjs
 ```
 
-Nếu báo lỗi đăng nhập/quyền, hãy cấp quyền cho tài khoản Windows hiện tại trên database hoặc nhờ quản trị viên cấu hình SQL Server. Không cần gửi mật khẩu cho ứng dụng khi chạy profile Windows-auth.
+### 4.2. Kiểm chứng trọn vẹn 4 Luồng nghiệp vụ End-to-End
+Chạy script kiểm chứng toàn diện tất cả các tính năng kinh doanh:
 
-## 4. Chạy ứng dụng
-
-Cách khuyến nghị: mở CMD và chạy:
-
-```bat
-cd /d C:\Users\Admin\Downloads\QLPhongTro-main
-run_app.bat
+```powershell
+node runtime-tests/verify-all-business-flows.mjs
 ```
 
-Launcher sẽ kiểm tra JDK, Maven, SQL Server và cổng 8080; cài thư viện Windows Authentication đã xác minh chữ ký Microsoft vào thư mục dữ liệu riêng của user; sau đó chạy Spring Boot bằng profile `windows-auth`.
+Luồng kiểm chứng tự động bao gồm:
+- **Luồng A:** Khách gửi yêu cầu thuê phòng $\rightarrow$ Chủ trọ duyệt & tạo nháp hợp đồng $\rightarrow$ Gửi hợp đồng $\rightarrow$ Khách ký chấp nhận $\rightarrow$ Khách gửi yêu cầu cọc $\rightarrow$ Chủ trọ duyệt cọc $\rightarrow$ Hợp đồng kích hoạt `ACTIVE`.
+- **Luồng B:** Chủ trọ chốt chỉ số điện nước $\rightarrow$ Lập hóa đơn dịch vụ $\rightarrow$ Xác nhận thanh toán $\rightarrow$ Hóa đơn chuyển trạng thái `PAID`.
+- **Luồng D:** Khách thuê gửi báo cáo sự cố kèm mô tả $\rightarrow$ Người dùng đăng ký chủ trọ mới $\rightarrow$ Admin duyệt hồ sơ chủ trọ $\rightarrow$ Admin khóa và mở khóa tài khoản người thuê.
+- **Luồng C:** Khách gửi yêu cầu trả phòng $\rightarrow$ Chủ trọ duyệt $\rightarrow$ Chủ trọ lập quyết toán thanh lý hoàn cọc $\rightarrow$ Khách xác nhận quyết toán $\rightarrow$ Chủ trọ xác nhận chuyển khoản hoàn cọc thực tế $\rightarrow$ Hoàn tất quyết toán, hợp đồng chuyển `TERMINATED` và phòng trở lại trạng thái `TRONG`.
 
-Khi log có dòng `Started QlphongtroApplication`, truy cập:
+### 4.3. Chạy toàn bộ Test Suite (164 tests)
+Chạy trong terminal riêng (dùng JDK 17):
 
-- Đăng nhập: http://localhost:8080/login
-- Trang chủ: http://localhost:8080/
-
-Giữ cửa sổ CMD mở trong lúc demo. Nhấn `Ctrl+C` tại cửa sổ đó để dừng ứng dụng.
-
-Nếu chạy Maven thủ công, cần cài thư viện trước và kích hoạt profile:
-
-```bat
-cd /d C:\Users\Admin\Downloads\QLPhongTro-main
-set "JAVA_HOME=D:\Java\jdk-21.0.11"
-set "PATH=%JAVA_HOME%\bin;%PATH%"
-powershell -NoProfile -ExecutionPolicy Bypass -File install_sqlserver_auth.ps1
-set "AUTH_DLL_DIR=%USERPROFILE%\qlphongtro-data\mssql-jdbc-auth\12.4.2\x64"
-mvn spring-boot:run -Dspring-boot.run.profiles=windows-auth "-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false -Djava.library.path=%AUTH_DLL_DIR%"
+```cmd
+call scripts\mvn17.cmd clean test
 ```
 
-## 5. Tài khoản và dữ liệu demo
+Kết quả: **164/164 tests passed (0 failures, 0 errors, 0 skipped)**.
 
-Ứng dụng hiện không seed tài khoản, không reset mật khẩu và không tự tạo hồ sơ/phòng/hóa đơn demo. Mật khẩu đã băm trong database không thể đọc lại để xác minh mật khẩu đăng nhập. Không sử dụng mật khẩu mẫu không có bằng chứng.
+---
 
-Để xem các username/role hiện có mà không đọc password hash, dùng SQL Server Management Studio hoặc `sqlcmd` với Windows Authentication. Truy vấn chỉ đọc:
+## 5. Cấu hình kết nối Cơ sở dữ liệu
 
-```sql
-SELECT u.username, r.role_name, u.enabled, u.account_status
-FROM dbo.users AS u
-JOIN dbo.roles AS r ON r.role_id = u.role_id
-ORDER BY r.role_name, u.username;
+File cấu hình: `src/main/resources/application-windows-auth.properties`
+```properties
+spring.datasource.url=jdbc:sqlserver://localhost:1435;databaseName=ApartmentDB_v2;integratedSecurity=true;encrypt=true;trustServerCertificate=true;
+spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.locations=classpath:db/migration/common,classpath:db/migration/sqlserver
+app.seed.demo-rooms=false
+app.db.migrate-unicode=false
 ```
-
-Đăng nhập bằng username/mật khẩu hiện có do người quản trị cung cấp. Tài khoản chủ trọ mới chỉ hoạt động sau khi được Admin duyệt theo luồng ứng dụng.
-
-## 6. Gợi ý trình bày
-
-Sau khi xác minh thông tin đăng nhập thực tế, có thể trình bày:
-
-1. Trang đăng nhập và trang phòng công khai.
-2. Dashboard Admin, danh sách tài khoản và hàng chờ duyệt chủ trọ (nếu có hồ sơ chờ).
-3. Dashboard chủ trọ, khu trọ/phòng/người thuê/hợp đồng.
-4. Dashboard người thuê, hợp đồng và yêu cầu chấm dứt (nếu có dữ liệu liên kết).
-5. Hóa đơn và thanh toán chỉ khi có dữ liệu thật trong database.
-
-Không tạo thao tác ghi trên database thật chỉ để làm đầy màn demo.
-
-## 7. Xử lý lỗi thường gặp
-
-- **Thiếu JDK/Maven:** kiểm tra lại đường dẫn JDK và `PATH`; mở CMD mới sau khi cài Maven.
-- **SQL Server không kết nối:** kiểm tra dịch vụ SQL Server, TCP/IP, port 1433 và quyền của tài khoản Windows bằng `sqlcmd -S localhost -E -d ApartmentDB`.
-- **Không tải được thư viện native:** cần truy cập mạng tới GitHub release của Microsoft hoặc tải thư viện theo hướng dẫn quản trị máy; launcher xác minh SHA-256 và chữ ký Microsoft trước khi sử dụng.
-- **`UnsatisfiedLinkError`:** xác nhận JDK và Windows đều 64-bit; xóa thư mục `C:\Users\<user>\qlphongtro-data\mssql-jdbc-auth\12.4.2` nếu thư viện hỏng rồi chạy lại launcher.
-- **Cổng 8080 đang dùng:** launcher sẽ báo PID; đóng đúng ứng dụng đang dùng cổng đó rồi chạy lại, không tự động dừng tiến trình khác.
-- **Tài khoản không đăng nhập được:** kiểm tra đúng username/password, trạng thái tài khoản và việc Admin đã duyệt chủ trọ hay chưa.
-- **Lỗi cột/bảng hoặc quyền DDL:** xem log Spring Boot. Cấu hình JPA hiện tại là `ddl-auto=update`; không đổi sang `create`/`create-drop` và không chạy script khởi tạo DB hiện có trên database thật.
-
-## 8. Bảo mật và tình trạng xác minh
-
-- Profile `windows-auth` dùng tài khoản Windows hiện tại; profile SQL login mặc định không bị thay đổi.
-- Khóa remember-me của profile demo tự sinh nếu không được cấu hình; cookie remember-me sẽ mất hiệu lực sau khi ứng dụng khởi động lại.
-- Không có mật khẩu DB hoặc mật khẩu demo nào được lưu trong tài liệu/source.
-- Việc đăng nhập bằng ba vai trò và nội dung dữ liệu demo chỉ được xem là xác minh sau khi người vận hành đăng nhập bằng thông tin xác thực thật.

@@ -9,7 +9,7 @@ if not exist "%JAVA_HOME%\bin\java.exe" (
     pause
     exit /b 1
 )
-set "PATH=%JAVA_HOME%\bin;%PATH%"
+set "PATH=C:\Users\Admin\apache-maven-3.9.6\bin;%JAVA_HOME%\bin;%PATH%"
 set "AUTH_DLL_DIR=%USERPROFILE%\qlphongtro-data\mssql-jdbc-auth\12.4.2\x64"
 
 set "MAVEN_OPTS=-Dfile.encoding=UTF-8"

@@ -323,7 +323,7 @@ public class TenantPortalServiceImpl implements TenantPortalService {
     private static boolean tenantHasActiveContractAccess(Integer userId, Tenant tenant, Contract contract,
                                                         Map<Integer, ContractTenant> tenantLinks,
                                                         LocalDate today) {
-        return ("TENANT_ACCEPTED".equalsIgnoreCase(contract.getStatus())
+        return (("TENANT_ACCEPTED".equalsIgnoreCase(contract.getStatus()) || "ACTIVE".equalsIgnoreCase(contract.getStatus()))
                 && contract.getTenantUser() != null
                 && contract.getTenantUser().getUserId().equals(userId))
                 || tenantHasAccessDuring(userId, tenant, contract, tenantLinks, today, today);
@@ -337,7 +337,7 @@ public class TenantPortalServiceImpl implements TenantPortalService {
         }
         return ("ACTIVE".equalsIgnoreCase(status) || "HIỆU LỰC".equalsIgnoreCase(status))
                 && contract.getStartDate() != null && contract.getEndDate() != null
-                && !contract.getStartDate().isAfter(today) && !contract.getEndDate().isBefore(today);
+                && (contract.getEndDate() == null || !contract.getEndDate().isBefore(today));
     }
 
     private static boolean isOutstanding(Invoice invoice) {

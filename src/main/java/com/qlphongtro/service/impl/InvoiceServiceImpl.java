@@ -82,7 +82,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER', 'LANDLORD')")
     @Transactional(readOnly = true)
     public List<Invoice> getAllInvoices() {
         if (CurrentUser.isTenant()) {
@@ -96,7 +96,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER', 'LANDLORD')")
     @Transactional(readOnly = true)
     public Invoice getInvoiceById(Integer id) {
         if (CurrentUser.isTenant()) {
@@ -116,7 +116,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'USER', 'LANDLORD')")
     @Transactional(readOnly = true)
     public List<Invoice> getInvoicesByContractId(Integer contractId) {
         if (CurrentUser.isTenant()) {
@@ -139,7 +139,7 @@ public class InvoiceServiceImpl implements InvoiceService {
      * Trả về object Invoice đã được lưu.
      */
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'LANDLORD')")
     public Invoice generateMonthlyInvoice(Integer contractId, Date month) {
         if (month == null) {
             month = new Date();
@@ -149,7 +149,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'LANDLORD')")
     public Invoice generateMonthlyInvoice(Integer contractId, LocalDate month) {
         final LocalDate targetMonth = (month != null) ? month : LocalDate.now();
 
@@ -500,7 +500,8 @@ public class InvoiceServiceImpl implements InvoiceService {
         String status = contract.getStatus();
         boolean activeStatus = "ACTIVE".equalsIgnoreCase(status)
                 || "HIỆU LỰC".equalsIgnoreCase(status)
-                || "ĐANG HIỆU LỰC".equalsIgnoreCase(status);
+                || "ĐANG HIỆU LỰC".equalsIgnoreCase(status)
+                || "TENANT_ACCEPTED".equalsIgnoreCase(status);
         return activeStatus
                 && contract.getStartDate() != null
                 && contract.getEndDate() != null

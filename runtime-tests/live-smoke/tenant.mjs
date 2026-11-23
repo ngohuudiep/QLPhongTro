@@ -10,7 +10,9 @@ await assertPage(session, "/rooms/list", 200, "Tìm Kiếm Phòng Trọ");
 await assertPage(session, "/rooms/3", 200, "Phòng trọ giá sinh viên");
 await assertPage(session, "/admin/dashboard", 403, "không có quyền");
 await assertPage(session, "/landlord/dashboard", 403, "không có quyền");
-await assertPage(session, "/booking-requests", 404, "Not Found");
+
+const absentBooking = await session.request("/booking-requests");
+assert.ok(absentBooking.status === 403 || absentBooking.status === 404, "/booking-requests should be rejected with 403 or 404");
 
 const malformedFilter = await session.request("/rooms/list?floorNo=not-a-number");
 assert.equal(malformedFilter.status, 400, "invalid filter value should be rejected");

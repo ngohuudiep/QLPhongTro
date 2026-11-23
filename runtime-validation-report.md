@@ -1,102 +1,88 @@
-# Báo cáo Xác thực Vận hành (Runtime Validation Report)
+# Báo cáo Xác thực Vận hành Thực tế (Runtime Validation Report)
 
-**Thời điểm:** 2026-11-22 15:45 +07:00  
+**Thời điểm:** 2026-11-23 20:10 +07:00  
 **Nhánh git:** `feature/integrate-workspaces`  
-**Mục tiêu:** Xác thực tích hợp hoàn chỉnh 3 Workspace, 2 Luồng nghiệp vụ cốt lõi, Quản lý hình ảnh và Kiến trúc Flyway / JPA Validation.
+**Môi trường thực thi:**
+- **JDK:** Java 17.0.11 (`C:\Program Files\Java\jdk-17`)
+- **SQL Server:** `LAPTOP-12OGD3V1\SQLEXPRESS01`, port `1435`
+- **Database:** `ApartmentDB_v2` (Collation: `Vietnamese_CI_AS`)
+- **Profile:** `windows-auth` (`integratedSecurity=true`)
+- **Flyway Status:** `v2.14` sạch, `ddl-auto=validate` qua 100%
 
 ---
 
-## 1. Tóm tắt trạng thái
+## 1. Kết quả kiểm chứng chi tiết
 
-| Thành phần / Luồng | Trạng thái | Ghi chú |
+| Hạng mục kiểm tra | Trạng thái | Bằng chứng thực tế (Log / Output) |
 |---|:---:|---|
-| **CSDL & Flyway** | SẴN SÀNG | 9 migration scripts (V1 - V2_8), tương thích cả SQL Server và H2, cấu hình `ddl-auto=validate`. |
-| **Admin Workspace** | HOÀN TẤT | Dashboard thống kê, quản lý tài khoản, phê duyệt/từ chối đăng ký chủ trọ, quản lý bài đăng phòng. |
-| **Landlord Workspace** | HOÀN TẤT | Quản lý khu trọ, phòng, hợp đồng, chỉ số điện nước, lập hóa đơn, xử lý yêu cầu kết thúc hợp đồng. |
-| **Tenant Workspace** | HOÀN TẤT | Dashboard khách thuê, quản lý hợp đồng, hóa đơn & thanh toán, gửi sự cố kỹ thuật, gửi yêu cầu trả phòng. |
-| **Rental Workflow** | HOÀN TẤT | Khách đặt phòng $\rightarrow$ Chủ trọ duyệt $\rightarrow$ Hợp đồng trực tuyến $\rightarrow$ Xác nhận đặt cọc. |
-| **Contract Termination** | HOÀN TẤT | Yêu cầu kết thúc $\rightarrow$ Lập bảng quyết toán (bù trừ công nợ/hư hại) $\rightarrow$ Quyết toán hoàn cọc $\rightarrow$ Bàn giao phòng. |
-| **Upload ảnh phòng** | HOÀN TẤT | `RoomImageStorageService` lưu vào disk và `RoomImageResourceConfig` phục vụ qua `/room-images/**`. |
-| **Bảo mật & Phân quyền** | HOÀN TẤT | Hỗ trợ đăng nhập linh hoạt (username/email/phone), điều hướng tự động theo 3 vai trò, rate limit và lockout. |
-| **Bộ kiểm thử tự động** | SẴN SÀNG | 98 test cases bao phủ trọn vẹn Unit, WebMvc, DataJpa, Method Security và Flyway Migration. |
+| **1. Khởi động với DB trống & Tính lặp lại** | **PASS** | Đã kiểm chứng trên DB trống thứ 2 `ApartmentDB_test`: Flyway V1 $\rightarrow$ V2_14 chạy 100% thành công, Hibernate validate khớp hoàn toàn. |
+| **2. Seed vai trò & 3 tài khoản Demo** | **PASS** | `V2_11__seed_roles_and_demo_data.sql` tạo đủ 3 tài khoản (`admin`, `chutro`, `nguoithue`), mật khẩu BCrypt, kích hoạt hoạt động ngay. |
+| **3. Live Smoke Tests (3 vai trò)** | **PASS** | `admin.mjs` $\rightarrow$ `/admin/dashboard` (200 OK)<br>`landlord.mjs` $\rightarrow$ `/landlord/dashboard` (200 OK)<br>`tenant.mjs` $\rightarrow$ `/tenant/dashboard` (200 OK). |
+| **4. Hỗ trợ tiếng Việt Unicode** | **PASS** | Truy vấn SQL hiển thị đúng dấu tiếng Việt có dấu. Trang `/rooms/list` render chính xác các chuỗi Unicode như: *"Phòng Studio Ban công thoáng mát, Full nội thất"*, *"Chuyển địa điểm làm việc sang quận khác"*. |
+| **5. Luồng A: Đặt phòng $\rightarrow$ Hợp đồng $\rightarrow$ Duyệt cọc** | **PASS** | Tenant gửi booking $\rightarrow$ Landlord duyệt $\rightarrow$ Tạo draft $\rightarrow$ Tenant ký online $\rightarrow$ Tenant gửi deposit request $\rightarrow$ Landlord duyệt cọc $\rightarrow$ Hợp đồng chuyển `ACTIVE`. |
+| **6. Luồng B: Chỉ số $\rightarrow$ Hóa đơn $\rightarrow$ Thanh toán** | **PASS** | Landlord chốt chỉ số điện/nước $\rightarrow$ Lập hóa đơn $\rightarrow$ Xác nhận thanh toán (`confirm-paid`) $\rightarrow$ Hóa đơn chuyển trạng thái `PAID`. |
+| **7. Luồng D: Báo cáo sự cố, Duyệt chủ trọ, Khóa tài khoản** | **PASS** | Tenant gửi sự cố kèm trường mô tả `description` lưu vào DB $\rightarrow$ Khách đăng ký tài khoản chủ trọ mới $\rightarrow$ Admin duyệt $\rightarrow$ Admin khóa và mở khóa tài khoản người thuê thành công. |
+| **8. Luồng C: Chấm dứt Hợp đồng $\rightarrow$ Quyết toán $\rightarrow$ Đóng hợp đồng** | **PASS** | Tenant gửi yêu cầu hủy hợp đồng $\rightarrow$ Landlord duyệt $\rightarrow$ Landlord lập bảng quyết toán $\rightarrow$ Tenant xác nhận quyết toán $\rightarrow$ Landlord xác nhận hoàn cọc thực tế $\rightarrow$ Hợp đồng chuyển `TERMINATED`, phòng chuyển về `TRONG`. |
+| **9. Toàn bộ Test Suite (`mvn clean test`)** | **PASS** | **Tests run: 164, Failures: 0, Errors: 0, Skipped: 0**<br>**BUILD SUCCESS** (54.446 s). |
 
 ---
 
-## 2. Đường dẫn và quyền truy cập các Route chính
+## 2. Bằng chứng thực tế các kịch bản chạy
 
-### 2.1. Phân quyền URL (Security Filter Chain)
-- **Công khai (`permitAll`)**:
-  - `/`, `/rooms/list`, `/rooms/{id}`: Xem trang chủ và chi tiết phòng trọ công khai.
-  - `/login`, `/register`, `/forgot-password/**`, `/access-denied`: Đăng nhập, đăng ký, quên mật khẩu.
-  - `/css/**`, `/js/**`, `/images/**`, `/room-images/**`, `/webjars/**`: Tài nguyên tĩnh và ảnh phòng tải lên.
-- **Quản trị viên (`hasRole('ADMIN')`)**:
-  - `/admin/dashboard`: Dashboard tổng quan số liệu hệ thống.
-  - `/admin/workspaces`: Điều hướng quản trị.
-  - `/admin/accounts`, `/admin/accounts/**`: Quản lý tài khoản và khóa/mở khóa.
-  - `/admin/landlord-registrations`, `/admin/landlord-registrations/**`: Hàng chờ xét duyệt chủ trọ.
-  - `/admin/rooms`, `/admin/rooms/**`: Quản lý bài đăng phòng.
-  - `/admin/staff-assignments`: Phân công phụ trách tòa nhà.
-- **Chủ trọ (`hasAnyRole('LANDLORD', 'STAFF')`)**:
-  - `/landlord/dashboard`: Dashboard chủ trọ.
-  - `/landlord/buildings/**`: Quản lý khu trọ / tòa nhà.
-  - `/landlord/rooms/**`: Quản lý phòng trọ, giá, tiện nghi và tải ảnh lên.
-  - `/landlord/contracts/**`: Quản lý hợp đồng cho thuê.
-  - `/landlord/invoices/**`: Lập và theo dõi hóa đơn hàng tháng.
-  - `/landlord/meter-readings/**`: Ghi chỉ số điện nước.
-  - `/landlord/terminations/**`: Xử lý yêu cầu kết thúc và quyết toán hợp đồng.
-- **Khách thuê (`hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')`)**:
-  - `/tenant/dashboard`: Dashboard khách thuê (thông tin phòng, công nợ, thông báo).
-  - `/tenant/contracts/**`: Xem hợp đồng đang thuê.
-  - `/tenant/invoices/**`: Xem chi tiết hóa đơn và thanh toán.
-  - `/tenant/incidents/**`: Báo cáo sự cố phòng trọ.
-  - `/tenant/notifications`: Hộp thư thông báo hệ thống.
-  - `/tenant/termination-request`: Gửi yêu cầu chấm dứt hợp đồng.
-  - `/rooms/booking/**`: Gửi yêu cầu đặt phòng trực tuyến.
+### 2.1. Kết quả chạy kịch bản 4 luồng nghiệp vụ liên hoàn (`verify-all-business-flows.mjs`)
 
----
+```text
+=== STARTING FULL BUSINESS FLOW VERIFICATION ===
 
-## 3. Ba luồng nghiệp vụ chạy thực tế (End-to-End Walkthrough)
+--- LUỒNG A: Đặt phòng -> Hợp đồng -> Xác nhận cọc ---
+✓ Tenant đã gửi yêu cầu thuê phòng thành công
+✓ Chủ trọ duyệt yêu cầu #6, tạo bản nháp hợp đồng #3
+✓ Chủ trọ đã gửi hợp đồng #3 cho người thuê
+✓ Khách thuê đã ký chấp nhận hợp đồng #3
+✓ Khách thuê đã gửi yêu cầu xác nhận tiền cọc cho hợp đồng #3
+✓ Chủ trọ đã duyệt tiền cọc #2 -> Hợp đồng #3 chính thức có hiệu lực (ACTIVE)
 
-### Luồng 1: Đặt phòng $\rightarrow$ Hợp đồng $\rightarrow$ Xác nhận tiền cọc
-1. Khách thuê truy cập `/rooms/{id}`, bấm "Đăng ký thuê phòng", điền thông tin và gửi yêu cầu (`POST /rooms/booking`).
-2. Yêu cầu tạo record trong bảng `booking_requests` với trạng thái `PENDING_LANDLORD_REVIEW`.
-3. Chủ trọ vào `/landlord/contracts/new` từ yêu cầu thuê, điền các điều khoản hợp đồng và bấm tạo hợp đồng dự thảo. Hợp đồng chuyển sang trạng thái `CONTRACT_SENT` / `DRAFT`.
-4. Khách thuê vào `/tenant/contracts/{id}`, đọc các điều khoản và bấm "Xác nhận hợp đồng". Hợp đồng chuyển sang `TENANT_ACCEPTED`.
-5. Khách thuê gửi thông tin chuyển khoản đặt cọc. Record `deposit_confirmation_requests` được tạo với trạng thái `PENDING`.
-6. Chủ trọ vào `/landlord/contracts`, đối chiếu tiền cọc và bấm "Xác nhận cọc".
-7. Hệ thống tự động:
-   - Kích hoạt hợp đồng sang `ACTIVE`.
-   - Tạo bản ghi thanh toán tiền cọc trong `payments` (`provider = 'DEPOSIT'`, `status = 'SUCCESS'`).
-   - Cập nhật trạng thái phòng thành `DA_THUE`.
+--- LUỒNG B: Ghi chỉ số -> Lập hóa đơn -> Thanh toán ---
+✓ Chủ trọ đã chốt chỉ số điện nước thành công
+✓ Hóa đơn #1 đã được ghi nhận thanh toán thành công (PAID)
 
-### Luồng 2: Nhập chỉ số điện nước $\rightarrow$ Lập hóa đơn $\rightarrow$ Thanh toán
-1. Cuối tháng, Chủ trọ vào `/landlord/meter-readings/entry`, chọn phòng và nhập chỉ số điện, nước mới.
-2. Bản ghi `meter_readings` được lưu, tính toán mức tiêu thụ tự động.
-3. Chủ trọ vào `/landlord/invoices/new`, chọn hợp đồng và kỳ thanh toán. Hệ thống tự động tính tiền phòng, tiền điện, tiền nước theo đơn giá hợp đồng và tạo các dòng chi tiết trong `invoice_line_items`.
-4. Hóa đơn được tạo với trạng thái `UNPAID` (`CHƯA THANH TOÁN`), đồng thời tạo bản ghi `user_notifications` gửi tới khách thuê.
-5. Khách thuê vào `/tenant/invoices/{id}`, xem bảng kê chi tiết và tiến hành thanh toán.
-6. Chủ trọ hoặc hệ thống xác nhận thanh toán $\rightarrow$ tạo record `payments` $\rightarrow$ Hóa đơn chuyển trạng thái sang `PAID` (`ĐÃ THANH TOÁN`).
+--- LUỒNG D: Sự cố Tenant, Admin duyệt đăng ký chủ trọ & Khóa tài khoản ---
+✓ Khách thuê đã gửi phản ánh sự cố kèm mô tả chi tiết thành công
+✓ Người dùng đã đăng ký tài khoản chủ trọ mới: chutro_4421 (ở trạng thái chờ duyệt)
+✓ Admin đã duyệt thành công tài khoản chủ trọ #9 (chutro_4421)
+✓ Admin đã khóa tài khoản người thuê #3 (nguoithue)
+✓ Admin đã mở khóa tài khoản người thuê #3 (nguoithue)
 
-### Luồng 3: Yêu cầu trả phòng $\rightarrow$ Quyết toán $\rightarrow$ Hoàn cọc & Trả phòng
-1. Khách thuê hoặc Chủ trọ tạo yêu cầu trả phòng tại `/tenant/termination-request` hoặc `/landlord/terminations/new`. Bản ghi `contract_termination_requests` được tạo.
-2. Trạng thái yêu cầu là `PENDING_INSPECTION` hoặc `SETTLEMENT_PROPOSED`.
-3. Chủ trọ kiểm tra phòng, vào `/landlord/terminations/{id}/settlement`, nhập:
-   - Số điện/nước lẻ phát sinh đến ngày trả phòng.
-   - Hóa đơn còn nợ (nếu có).
-   - Chi phí bồi thường hư hại đồ đạc (kèm lý do).
-   - Số tiền cọc hoàn lại (`deposit_refund_amount = deposit_amount - deductions`).
-4. Bảng quyết toán `contract_settlements` được lưu.
-5. Sau khi hai bên xác nhận và thanh toán xong khoản chênh lệch hoàn cọc / công nợ:
-   - Yêu cầu kết thúc chuyển sang `COMPLETED`.
-   - Hợp đồng chuyển sang `TERMINATED`.
-   - Trạng thái phòng tự động chuyển về `TRONG` (Sẵn sàng cho khách tiếp theo).
-   - Mọi bước thay đổi được ghi nhật ký đầy đủ trong `contract_termination_histories`.
+--- LUỒNG C: Khách yêu cầu kết thúc -> Quyết toán hoàn cọc ---
+✓ Khách thuê đã gửi yêu cầu kết thúc hợp đồng #3 (yêu cầu #2)
+✓ Chủ trọ đã phê duyệt yêu cầu kết thúc #2
+✓ Chủ trọ đã lập bảng quyết toán hoàn cọc #2
+✓ Khách thuê đã xác nhận đồng ý quyết toán #2
+✓ Chủ trọ đã xác nhận hoàn tiền cọc thực tế (mã giao dịch: REFUND-VNPAY-20261231-01)
+✓ Chủ trọ đã hoàn tất quyết toán và đóng hợp đồng #3 thành công
 
----
+=======================================================
+TẤT CẢ CÁC LUỒNG NGHIỆP VỤ A, B, C, D ĐÃ CHẠY THÀNH CÔNG 100%!
+=======================================================
+```
 
-## 4. Kiểm chứng kỹ thuật và Tính toàn vẹn
+### 2.2. Kết quả chạy toàn bộ kiểm thử tự động (`mvn clean test`)
 
-- Không có lỗi biên dịch hoặc thiếu symbol trong toàn bộ 164 tệp mã nguồn Java.
-- `FlywayMigrationH2IntegrationTest` đảm bảo 100% schema và các ràng buộc toàn vẹn được khởi tạo chuẩn xác trên cơ sở dữ liệu trắng.
-- Toàn bộ các kiểm thử phân quyền và cách ly bảo mật của Phase 2 (`StaffBuildingScope`, `TenantOwnership`, `ScopedRepositoryDataJpaTest`) được bảo toàn trọn vẹn.
-- Tài liệu và kịch bản demo [HUONG_DAN_CHAY_DEMO.md](./HUONG_DAN_CHAY_DEMO.md) và các file kịch bản chạy [run_app.bat](./run_app.bat), [install_sqlserver_auth.ps1](./install_sqlserver_auth.ps1) đã sẵn sàng phục vụ chạy trực tiếp.
+```text
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+...
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0 -- in com.qlphongtro.VietnameseUnicodeSupportIntegrationTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 164, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  54.446 s
+[INFO] Finished at: 2026-11-23T20:11:06+07:00
+[INFO] ------------------------------------------------------------------------
+```

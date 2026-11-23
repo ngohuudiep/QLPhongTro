@@ -204,7 +204,7 @@ public class RentalWorkflowServiceImpl implements RentalWorkflowService {
         }
         if (bookingRequestRepository.existsByRoom_ListingIdAndStatusInAndRequestIdNot(
                 listing.getListingId(),
-                List.of("APPROVED_BY_LANDLORD", "CONTRACT_SENT", "COMPLETED"),
+                List.of("APPROVED_BY_LANDLORD", "CONTRACT_SENT"),
                 requestId)) {
             throw new IllegalStateException("Phòng đã được giữ cho một yêu cầu khác.");
         }
@@ -225,7 +225,8 @@ public class RentalWorkflowServiceImpl implements RentalWorkflowService {
         draft.setRepresentative(tenantRepository.findByUser_UserId(request.getUser().getUserId()).orElse(null));
         draft.setTenantUser(request.getUser());
         draft.setRentalRequest(saved);
-        draft.setStartDate(request.getExpectedMoveInDate());
+        LocalDate moveIn = request.getExpectedMoveInDate() != null ? request.getExpectedMoveInDate() : LocalDate.now();
+        draft.setStartDate(moveIn);
         draft.setContractDate(LocalDate.now());
         draft.setMonthlyRent(room.getPriceOverride() != null ? room.getPriceOverride() : listing.getPrice());
         draft.setContractType("ONLINE_RENTAL");
@@ -573,6 +574,9 @@ public class RentalWorkflowServiceImpl implements RentalWorkflowService {
         request.setRespondedAt(confirmedAt);
         request.setRespondedBy(landlord);
         request.setResponseReference(payment.getReferenceNo());
+        contract.setStatus("ACTIVE");
+        contract.setLandlordApprovedAt(confirmedAt);
+        contractRepository.save(contract);
         DepositConfirmationRequest savedRequest = depositConfirmationRequestRepository.save(request);
         notify(request.getTenantUser(), UserNotification.TYPE_DEPOSIT,
                 "Tiền cọc đã được xác nhận",
