@@ -24,11 +24,11 @@ if errorlevel 1 (
 
 cd /d "%~dp0"
 
-echo Dang kiem tra SQL Server localhost:1433...
-powershell -NoProfile -Command "if (Test-NetConnection localhost -Port 1433 -InformationLevel Quiet) { exit 0 } else { exit 1 }"
+echo Dang kiem tra SQL Server localhost:1435 (SQLEXPRESS01)...
+powershell -NoProfile -Command "if (Test-NetConnection localhost -Port 1435 -InformationLevel Quiet) { exit 0 } else { exit 1 }"
 if errorlevel 1 (
-    echo [LOI] Khong ket noi duoc SQL Server tai localhost:1433.
-    echo Hay khoi dong dich vu SQL Server va kiem tra TCP/IP.
+    echo [LOI] Khong ket noi duoc SQLEXPRESS01 tai localhost:1435.
+    echo Hay bat TCP/IP port 1435 cho SQLEXPRESS01 va restart service MSSQL$SQLEXPRESS01.
     pause
     exit /b 1
 )
