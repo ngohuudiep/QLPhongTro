@@ -51,8 +51,8 @@ class FlywayMigrationH2IntegrationTest {
                 .map(info -> info.getVersion().getVersion())
                 .toList();
 
-        // Xác nhận đã áp dụng đầy đủ 10 migration (1, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9)
-        assertThat(versions).containsExactly("1", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9");
+        // Xác nhận đã áp dụng đầy đủ 11 migration (1, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10)
+        assertThat(versions).containsExactly("1", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10");
 
         // Xác nhận trạng thái của từng migration đều thành công
         for (MigrationInfo info : applied) {
