@@ -221,7 +221,13 @@ public class ReviewServiceImpl implements ReviewService {
         User tenant = userRepository.findByUsername(tenantUsername)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng: " + tenantUsername));
 
-        List<Contract> contracts = contractRepository.findByTenantUser_UserId(tenant.getUserId());
+        List<Contract> contracts = new java.util.ArrayList<>(contractRepository.findAllForTenant(tenantUsername));
+        List<Contract> directContracts = contractRepository.findByTenantUser_UserId(tenant.getUserId());
+        for (Contract dc : directContracts) {
+            if (contracts.stream().noneMatch(c -> c.getContractId().equals(dc.getContractId()))) {
+                contracts.add(dc);
+            }
+        }
         return contracts.stream()
                 .filter(c -> c.getStatus() != null && REVIEWABLE_STATUSES.stream().anyMatch(s -> s.equalsIgnoreCase(c.getStatus())))
                 .filter(c -> !reviewRepository.existsByContract_ContractId(c.getContractId()))

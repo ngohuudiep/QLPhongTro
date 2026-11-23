@@ -36,6 +36,7 @@ public interface ContractRepository extends JpaRepository<Contract, Integer> {
     boolean existsForTenantAndRoom(@Param("username") String username, @Param("roomId") Integer roomId);
 
     List<Contract> findByStatus(String status);
+    List<Contract> findByTenantUser_UserId(Integer userId);
     List<Contract> findByTenantUser_UserIdOrderByContractIdDesc(Integer userId);
     List<Contract> findByRoom_Building_Owner_UsernameOrderByStartDateDesc(String username);
     Optional<Contract> findByRentalRequest_RequestId(Integer requestId);
