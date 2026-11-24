@@ -79,4 +79,32 @@ public class TenantReviewController {
 
         return "redirect:/tenant/reviews";
     }
+
+    @PostMapping("/{id}/edit")
+    public String editReview(@org.springframework.web.bind.annotation.PathVariable("id") Integer id,
+                             @org.springframework.web.bind.annotation.RequestParam("rating") Integer rating,
+                             @org.springframework.web.bind.annotation.RequestParam("comment") String comment,
+                             Authentication authentication,
+                             RedirectAttributes redirectAttributes) {
+        try {
+            reviewService.updateReview(authentication.getName(), id, rating, comment);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật đánh giá thành công!");
+        } catch (IllegalArgumentException | IllegalStateException | org.springframework.security.access.AccessDeniedException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/tenant/reviews";
+    }
+
+    @PostMapping("/{id}/report")
+    public String reportReview(@org.springframework.web.bind.annotation.PathVariable("id") Integer id,
+                               @org.springframework.web.bind.annotation.RequestParam("reason") String reason,
+                               RedirectAttributes redirectAttributes) {
+        try {
+            reviewService.reportReview(id, reason);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã gửi báo cáo vi phạm đến quản trị viên để xem xét.");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/tenant/reviews";
+    }
 }

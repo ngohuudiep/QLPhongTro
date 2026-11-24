@@ -29,6 +29,7 @@ public class AdminReviewController {
 
         model.addAttribute("reviewPage", reviewPage);
         model.addAttribute("selectedStatus", status);
+        model.addAttribute("reportedCount", reviewService.getReportedReviewsCount());
 
         return "admin/reviews";
     }
@@ -36,13 +37,14 @@ public class AdminReviewController {
     @PostMapping("/{reviewId}/toggle")
     public String toggleVisibility(@PathVariable Integer reviewId,
                                    @RequestParam boolean visible,
+                                   @RequestParam(required = false) String hideReason,
                                    @RequestParam(defaultValue = "ALL") String status,
                                    @RequestParam(defaultValue = "0") int page,
                                    RedirectAttributes redirectAttributes) {
         try {
-            reviewService.toggleReviewVisibility(reviewId, visible);
+            reviewService.toggleReviewVisibility(reviewId, visible, hideReason);
             redirectAttributes.addFlashAttribute("successMessage",
-                    visible ? "Đã hiển thị lại đánh giá #" + reviewId : "Đã ẩn đánh giá #" + reviewId);
+                    visible ? "Đã hiển thị lại đánh giá #" + reviewId : "Đã ẩn đánh giá #" + reviewId + (hideReason != null ? " (Lý do: " + hideReason + ")" : ""));
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }

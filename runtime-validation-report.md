@@ -7,7 +7,7 @@
 - **SQL Server:** `LAPTOP-12OGD3V1\SQLEXPRESS01`, port `1435`
 - **Database:** `ApartmentDB_v2` (Collation: `Vietnamese_CI_AS`)
 - **Profile:** `windows-auth` (`integratedSecurity=true`)
-- **Flyway Status:** `v2.14` sạch, `ddl-auto=validate` qua 100%
+- **Flyway Status:** `v2.16` sạch, `ddl-auto=validate` qua 100%
 
 ---
 
@@ -15,15 +15,19 @@
 
 | Hạng mục kiểm tra | Trạng thái | Bằng chứng thực tế (Log / Output) |
 |---|:---:|---|
-| **1. Khởi động với DB trống & Tính lặp lại** | **PASS** | Đã kiểm chứng trên DB trống thứ 2 `ApartmentDB_test`: Flyway V1 $\rightarrow$ V2_14 chạy 100% thành công, Hibernate validate khớp hoàn toàn. |
-| **2. Seed vai trò & 3 tài khoản Demo** | **PASS** | `V2_11__seed_roles_and_demo_data.sql` tạo đủ 3 tài khoản (`admin`, `chutro`, `nguoithue`), mật khẩu BCrypt, kích hoạt hoạt động ngay. |
-| **3. Live Smoke Tests (3 vai trò)** | **PASS** | `admin.mjs` $\rightarrow$ `/admin/dashboard` (200 OK)<br>`landlord.mjs` $\rightarrow$ `/landlord/dashboard` (200 OK)<br>`tenant.mjs` $\rightarrow$ `/tenant/dashboard` (200 OK). |
-| **4. Hỗ trợ tiếng Việt Unicode** | **PASS** | Truy vấn SQL hiển thị đúng dấu tiếng Việt có dấu. Trang `/rooms/list` render chính xác các chuỗi Unicode như: *"Phòng Studio Ban công thoáng mát, Full nội thất"*, *"Chuyển địa điểm làm việc sang quận khác"*. |
-| **5. Luồng A: Đặt phòng $\rightarrow$ Hợp đồng $\rightarrow$ Duyệt cọc** | **PASS** | Tenant gửi booking $\rightarrow$ Landlord duyệt $\rightarrow$ Tạo draft $\rightarrow$ Tenant ký online $\rightarrow$ Tenant gửi deposit request $\rightarrow$ Landlord duyệt cọc $\rightarrow$ Hợp đồng chuyển `ACTIVE`. |
-| **6. Luồng B: Chỉ số $\rightarrow$ Hóa đơn $\rightarrow$ Thanh toán** | **PASS** | Landlord chốt chỉ số điện/nước $\rightarrow$ Lập hóa đơn $\rightarrow$ Xác nhận thanh toán (`confirm-paid`) $\rightarrow$ Hóa đơn chuyển trạng thái `PAID`. |
-| **7. Luồng D: Báo cáo sự cố, Duyệt chủ trọ, Khóa tài khoản** | **PASS** | Tenant gửi sự cố kèm trường mô tả `description` lưu vào DB $\rightarrow$ Khách đăng ký tài khoản chủ trọ mới $\rightarrow$ Admin duyệt $\rightarrow$ Admin khóa và mở khóa tài khoản người thuê thành công. |
-| **8. Luồng C: Chấm dứt Hợp đồng $\rightarrow$ Quyết toán $\rightarrow$ Đóng hợp đồng** | **PASS** | Tenant gửi yêu cầu hủy hợp đồng $\rightarrow$ Landlord duyệt $\rightarrow$ Landlord lập bảng quyết toán $\rightarrow$ Tenant xác nhận quyết toán $\rightarrow$ Landlord xác nhận hoàn cọc thực tế $\rightarrow$ Hợp đồng chuyển `TERMINATED`, phòng chuyển về `TRONG`. |
-| **9. Toàn bộ Test Suite (`mvn clean test`)** | **PASS** | **Tests run: 164, Failures: 0, Errors: 0, Skipped: 0**<br>**BUILD SUCCESS** (54.446 s). |
+| **1. Khởi động với DB trống & Tính lặp lại** | **PASS** | Đã kiểm chứng: Flyway V1 $\rightarrow$ V2_16 chạy 100% thành công, Hibernate validate khớp hoàn toàn. |
+| **2. Seed vai trò & 3 tài khoản Demo** | **PASS** | `V2_11` & `V2_15` tạo đủ 3 tài khoản (`admin`, `chutro`, `nguoithue`), mật khẩu BCrypt, kích hoạt hoạt động ngay. |
+| **3. Live Smoke Tests (3 vai trò)** | **PASS** | `admin.mjs` $\rightarrow$ `/admin/dashboard` (200 OK)<br>`landlord.mjs` $\rightarrow$ `/landlord/dashboard` (200 OK)<br>`tenant.mjs` $\rightarrow$ `/tenant/dashboard` (200 OK). Tất cả navbar link trả về 200/302. |
+| **4. Danh sách phòng hiển thị đủ 14 phòng** | **PASS** | Sửa triệt để lỗi SpEL BigDecimal trong Thymeleaf. Trang `/rooms/list` render đủ 14/14 phòng, không bị ngắt cụt HTML, hỗ trợ sắp xếp theo rating. |
+| **5. Luồng Đặt phòng chuyển đúng trang** | **PASS** | Gửi yêu cầu thuê phòng thành công chuyển hướng về `/tenant/rental/requests` kèm thông báo flash thành công. |
+| **6. Menu Đánh giá phòng & Điều hướng vai trò** | **PASS** | Route `/reviews` & `/danh-gia` tự động phân bổ: Admin $\rightarrow$ `/admin/reviews`, Chủ trọ $\rightarrow$ `/landlord/reviews`, Khách thuê $\rightarrow$ `/tenant/reviews`, Khách vãng lai $\rightarrow$ `/login`. |
+| **7. Menu tài khoản & Đăng xuất đa thiết bị** | **PASS** | Navbar responsive, không wrap rách giao diện ở 992-1200px, fallback vanilla JS cho dropdown menu, hỗ trợ đăng xuất cả POST và GET an toàn. |
+| **8. Luồng A: Đặt phòng $\rightarrow$ Hợp đồng $\rightarrow$ Duyệt cọc** | **PASS** | Tenant gửi booking $\rightarrow$ Landlord duyệt $\rightarrow$ Tạo draft $\rightarrow$ Tenant ký online $\rightarrow$ Tenant gửi deposit request $\rightarrow$ Landlord duyệt cọc $\rightarrow$ Hợp đồng chuyển `ACTIVE`. |
+| **9. Luồng B: Chỉ số $\rightarrow$ Hóa đơn $\rightarrow$ Thanh toán** | **PASS** | Landlord chốt chỉ số điện/nước $\rightarrow$ Lập hóa đơn $\rightarrow$ Xác nhận thanh toán (`confirm-paid`) $\rightarrow$ Hóa đơn chuyển trạng thái `PAID`. |
+| **10. Luồng D: Báo cáo sự cố, Duyệt chủ trọ, Khóa tài khoản** | **PASS** | Tenant gửi sự cố kèm trường mô tả `description` lưu vào DB $\rightarrow$ Khách đăng ký tài khoản chủ trọ mới $\rightarrow$ Admin duyệt $\rightarrow$ Admin khóa và mở khóa tài khoản người thuê thành công. |
+| **11. Luồng C: Chấm dứt Hợp đồng $\rightarrow$ Quyết toán $\rightarrow$ Đóng hợp đồng** | **PASS** | Tenant gửi yêu cầu hủy hợp đồng $\rightarrow$ Landlord duyệt $\rightarrow$ Landlord lập bảng quyết toán $\rightarrow$ Tenant xác nhận quyết toán $\rightarrow$ Landlord xác nhận hoàn cọc thực tế $\rightarrow$ Hợp đồng chuyển `TERMINATED`, phòng chuyển về `TRONG`. |
+| **12. Toàn bộ Test Suite (`mvn clean test`)** | **PASS** | **Tests run: 176, Failures: 0, Errors: 0, Skipped: 0**<br>**BUILD SUCCESS** (57.928 s). |
+
 
 ---
 

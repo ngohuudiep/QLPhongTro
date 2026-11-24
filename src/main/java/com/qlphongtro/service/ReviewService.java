@@ -14,11 +14,17 @@ public interface ReviewService {
 
     Review createReview(String tenantUsername, Integer contractId, Integer rating, String comment);
 
+    Review updateReview(String tenantUsername, Integer reviewId, Integer rating, String comment);
+
     Review replyReview(String landlordUsername, Integer reviewId, String replyComment);
 
     void toggleReviewVisibility(Integer reviewId, boolean visible);
 
+    void toggleReviewVisibility(Integer reviewId, boolean visible, String hideReason);
+
     void deleteReview(Integer reviewId);
+
+    void reportReview(Integer reviewId, String reason);
 
     void recalculateRatings(Integer roomId, Integer landlordUserId);
 
@@ -30,7 +36,17 @@ public interface ReviewService {
 
     Page<Review> getAllReviewsForAdmin(String status, Pageable pageable);
 
+    Page<Review> getReportedReviewsForAdmin(Pageable pageable);
+
+    long getReportedReviewsCount();
+
+    long getUnrepliedReviewsCountForLandlord(String landlordUsername);
+
+    java.util.Map<Integer, Long> getStarDistributionForRoom(Integer roomId);
+
     List<Contract> getReviewableContractsForTenant(String tenantUsername);
+
+    List<Review> getReviewsByTenant(String tenantUsername);
 
     Optional<Review> getReviewByContract(Integer contractId);
 

@@ -407,6 +407,16 @@ try { await retenantSession.logout(); } catch (_) {}
 try { await landlordSession.logout(); } catch (_) {}
 try { await adminSession.logout(); } catch (_) {}
 
+// Tự dọn và hoàn trả dữ liệu demo sau khi chạy xong
+try {
+  const { execSync } = await import("node:child_process");
+  console.log("\n[DỌN DẸP DỮ LIỆU TEST] Khôi phục dữ liệu demo ApartmentDB_v2 sạch...");
+  execSync("powershell -NoProfile -ExecutionPolicy Bypass -File scripts/reset_demo_data.ps1", { stdio: "inherit" });
+  console.log("✓ Dữ liệu demo đã được khôi phục nguyên vẹn sau khi kiểm chứng.");
+} catch (cleanupErr) {
+  console.warn("Cảnh báo dọn dẹp dữ liệu:", cleanupErr.message);
+}
+
 console.log("\n=======================================================");
 console.log("TẤT CẢ CÁC LUỒNG NGHIỆP VỤ A, B, C, D ĐÃ CHẠY THÀNH CÔNG 100%!");
 console.log("=======================================================");

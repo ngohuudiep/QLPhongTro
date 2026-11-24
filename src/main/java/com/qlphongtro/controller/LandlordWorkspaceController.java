@@ -46,15 +46,25 @@ public class LandlordWorkspaceController {
 
     private final LandlordWorkspaceService landlordWorkspaceService;
     private final InvoiceService invoiceService;
+    private final com.qlphongtro.service.ReviewService reviewService;
 
     public LandlordWorkspaceController(LandlordWorkspaceService landlordWorkspaceService, InvoiceService invoiceService) {
+        this(landlordWorkspaceService, invoiceService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public LandlordWorkspaceController(LandlordWorkspaceService landlordWorkspaceService,
+                                       InvoiceService invoiceService,
+                                       @org.springframework.beans.factory.annotation.Autowired(required = false) com.qlphongtro.service.ReviewService reviewService) {
         this.landlordWorkspaceService = landlordWorkspaceService;
         this.invoiceService = invoiceService;
+        this.reviewService = reviewService;
     }
 
     @GetMapping("/dashboard")
     public String dashboard(Authentication authentication, Model model) {
         model.addAttribute("stats", landlordWorkspaceService.getDashboard(authentication.getName()));
+        model.addAttribute("unrepliedReviewsCount", reviewService != null ? reviewService.getUnrepliedReviewsCountForLandlord(authentication.getName()) : 0L);
         model.addAttribute("username", authentication.getName());
         model.addAttribute("activePage", "dashboard");
         return "landlord/dashboard";

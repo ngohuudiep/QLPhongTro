@@ -17,7 +17,7 @@ public class ReviewForm {
     private Integer rating;
 
     @NotBlank(message = "Vui lòng nhập nhận xét chi tiết.")
-    @Size(max = 2000, message = "Nhận xét tối đa 2000 ký tự.")
+    @Size(max = 1000, message = "Nhận xét tối đa 1000 ký tự.")
     private String comment;
 
     public ReviewForm() {}

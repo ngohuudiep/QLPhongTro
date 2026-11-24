@@ -379,6 +379,13 @@ public class ContractTerminationServiceImpl implements ContractTerminationServic
                 "Hợp đồng " + contract.getContractCode() + " đã kết thúc sau khi hoàn tất các xác nhận.");
         notify(request.getResponder(), contract, request, "Hợp đồng đã được thanh lý",
                 "Hợp đồng " + contract.getContractCode() + " đã kết thúc sau khi hoàn tất các xác nhận.");
+        User tenantForReview = canonicalTenantUser(contract);
+        if (tenantForReview != null) {
+            notifyCustom(tenantForReview, contract, request, UserNotification.TYPE_REVIEW,
+                    "Mời đánh giá phòng",
+                    "Hợp đồng phòng " + (contract.getRoom() != null ? contract.getRoom().getRoomCode() : "")
+                            + " đã hoàn tất thanh lý. Hãy chia sẻ trải nghiệm của bạn để giúp cộng đồng người thuê!");
+        }
         return request;
     }
 
@@ -818,6 +825,11 @@ public class ContractTerminationServiceImpl implements ContractTerminationServic
 
     private void notify(User recipient, Contract contract, ContractTerminationRequest request,
                         String title, String message) {
+        notifyCustom(recipient, contract, request, UserNotification.TYPE_CONTRACT_TERMINATION, title, message);
+    }
+
+    private void notifyCustom(User recipient, Contract contract, ContractTerminationRequest request,
+                              String type, String title, String message) {
         if (recipient == null) {
             throw new IllegalStateException("Không xác định được người nhận thông báo.");
         }
@@ -825,7 +837,7 @@ public class ContractTerminationServiceImpl implements ContractTerminationServic
         notification.setRecipient(recipient);
         notification.setContract(contract);
         notification.setTerminationRequest(request);
-        notification.setNotificationType(UserNotification.TYPE_CONTRACT_TERMINATION);
+        notification.setNotificationType(type);
         notification.setTitle(title);
         notification.setMessage(message);
         notification.setCreatedAt(LocalDateTime.now());

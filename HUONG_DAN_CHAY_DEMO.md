@@ -39,7 +39,7 @@ Launcher `run_app.bat` sẽ tự động:
 3. Tải/kiểm tra thư viện Microsoft JDBC Auth DLL (`mssql-jdbc_auth-12.4.2.x64.dll`).
 4. Kiểm tra cổng `8080` (tránh xung đột tiến trình).
 5. Khởi động Spring Boot với profile `windows-auth`.
-6. Flyway tự động kiểm tra và áp dụng các migration từ `V1` đến `V2_14`.
+6. Flyway tự động kiểm tra và áp dụng các migration từ `V1` đến `V2_16`.
 
 Khi xuất hiện dòng thông báo:
 ```text
@@ -48,6 +48,19 @@ Started QlphongtroApplication in ... seconds
 Mở trình duyệt truy cập:
 - **Trang chủ / Danh sách phòng:** [http://localhost:8080/](http://localhost:8080/)
 - **Đăng nhập:** [http://localhost:8080/login](http://localhost:8080/login)
+- **Đánh giá phòng (tự điều hướng theo vai trò):** [http://localhost:8080/reviews](http://localhost:8080/reviews)
+- **Bảng xếp hạng chủ trọ & phòng:** [http://localhost:8080/rankings](http://localhost:8080/rankings)
+
+---
+
+## 4. Reset dữ liệu demo về trạng thái ban đầu
+
+Sau khi chạy thử các luồng nghiệp vụ hoặc test tự động, có thể khôi phục dữ liệu demo sạch sẽ (14 phòng với trạng thái chuẩn, khôi phục tài khoản demo, dọn dẹp hợp đồng/hóa đơn test) bằng PowerShell:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\reset_demo_data.ps1
+```
+
 
 ---
 

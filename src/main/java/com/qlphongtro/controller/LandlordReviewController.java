@@ -41,6 +41,7 @@ public class LandlordReviewController {
         model.addAttribute("landlord", landlord);
         model.addAttribute("reviewPage", reviewPage);
         model.addAttribute("replyForm", new ReviewReplyForm());
+        model.addAttribute("unrepliedCount", reviewService.getUnrepliedReviewsCountForLandlord(username));
 
         return "landlord/reviews";
     }

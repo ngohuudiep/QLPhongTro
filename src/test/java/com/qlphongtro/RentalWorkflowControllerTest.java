@@ -70,7 +70,7 @@ class RentalWorkflowControllerTest {
         String result = controller.tenantCreateRequest(
                 "1", "2", "2026-12-01", "Ghi chú", authentication, redirectAttributes);
 
-        assertEquals("redirect:/rooms/list", result);
+        assertEquals("redirect:/tenant/rental/requests", result);
         assertEquals(
                 "Đã gửi yêu cầu thuê phòng thành công! Yêu cầu đã được gửi đến chủ trọ. Vui lòng chờ chủ trọ xác nhận.",
                 redirectAttributes.getFlashAttributes().get("successMessage"));

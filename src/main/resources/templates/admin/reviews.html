@@ -43,6 +43,10 @@
                    th:classappend="${selectedStatus == 'HIDDEN' ? 'btn-danger' : 'btn-outline-secondary'}">
                     <i class="bi bi-eye-slash me-1"></i> Đã bị ẩn (HIDDEN)
                 </a>
+                <a th:href="@{/admin/reviews(status='REPORTED')}" class="btn btn-sm"
+                   th:classappend="${selectedStatus == 'REPORTED' ? 'btn-warning text-dark' : 'btn-outline-secondary'}">
+                    <i class="bi bi-flag-fill me-1"></i> Bị báo cáo vi phạm (<span th:text="${reportedCount ?: 0}">0</span>)
+                </a>
             </div>
         </div>
 
@@ -104,6 +108,13 @@
                                     <span th:if="${!rev.visible}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
                                         Đã ẩn
                                     </span>
+                                    <div th:if="${rev.hideReason != null}" class="text-danger small mt-1" style="font-size: 0.72rem;">
+                                        Lý do: <span th:text="${rev.hideReason}"></span>
+                                    </div>
+                                    <div th:if="${rev.isReported}" class="badge bg-warning text-dark border mt-1 d-block" style="font-size: 0.7rem;">
+                                        <i class="bi bi-flag-fill"></i> Bị báo cáo
+                                        <div th:if="${rev.reportReason != null}" class="fw-normal text-truncate" style="max-width: 140px;" th:text="${rev.reportReason}"></div>
+                                    </div>
                                 </td>
                                 <td class="text-nowrap small text-secondary" th:text="${#temporals.format(rev.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                                 <td class="text-nowrap">

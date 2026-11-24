@@ -153,12 +153,26 @@ main {
   transform: rotate(-6deg) scale(1.05);
 }
 
+.bg-navy {
+  background-color: #0f172a !important;
+}
+
 .nav-link {
   font-weight: 500;
   color: var(--text-muted) !important;
-  padding: 8px 16px !important;
+  padding: 8px 14px !important;
+  white-space: nowrap !important;
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
+}
+
+.navbar-dark .nav-link {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.navbar-dark .nav-link:hover, .navbar-dark .nav-link.active {
+  color: #fff !important;
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 .nav-link:hover, .nav-link.active {

@@ -45,4 +45,13 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     @Query("SELECT COUNT(r) FROM Review r WHERE r.landlordUser.userId = :landlordUserId AND r.status = 'VISIBLE'")
     Long countVisibleReviewsForLandlord(@Param("landlordUserId") Integer landlordUserId);
+
+    Page<Review> findByIsReportedTrueOrderByReportedAtDesc(Pageable pageable);
+
+    long countByIsReportedTrue();
+
+    long countByLandlordUser_UserIdAndReplyCommentIsNullAndStatus(Integer landlordUserId, String status);
+
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.room.roomId = :roomId AND r.status = 'VISIBLE' GROUP BY r.rating")
+    List<Object[]> countRatingsByStarForRoom(@Param("roomId") Integer roomId);
 }

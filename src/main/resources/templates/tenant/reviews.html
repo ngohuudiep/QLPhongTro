@@ -46,7 +46,7 @@
                     <div class="card-body p-4">
                         <div th:if="${#lists.isEmpty(reviewableContracts)}" class="text-center py-4 text-muted">
                             <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
-                            <p class="mb-0">Bạn hiện không có hợp đồng nào chờ đánh giá (chỉ hợp đồng đã/đang có hiệu lực và chưa đánh giá mới được gửi phản hồi).</p>
+                            <p class="mb-0">Bạn hiện không có hợp đồng nào đủ điều kiện đánh giá (chỉ hợp đồng đã kết thúc hoặc đang hoạt động từ 30 ngày trở lên và chưa đánh giá mới được gửi phản hồi).</p>
                         </div>
 
                         <form th:if="${!#lists.isEmpty(reviewableContracts)}" th:action="@{/tenant/reviews}" th:object="${reviewForm}" method="post">
@@ -83,9 +83,9 @@
 
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Nhận xét chi tiết <span class="text-danger">*</span></label>
-                                <textarea class="form-control" th:field="*{comment}" rows="4" maxlength="2000"
+                                <textarea class="form-control" th:field="*{comment}" rows="4" maxlength="1000"
                                           placeholder="Chia sẻ trải nghiệm về cơ sở vật chất, an ninh, vệ sinh và sự hỗ trợ của chủ trọ..." required></textarea>
-                                <small class="text-muted">Tối đa 2000 ký tự.</small>
+                                <small class="text-muted">Tối đa 1000 ký tự.</small>
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
@@ -113,6 +113,7 @@
                                 <div>
                                     <h6 class="fw-bold mb-1" th:text="${'Phòng ' + rev.room.roomCode + ' - ' + rev.room.building.buildingName}">Phòng P101</h6>
                                     <small class="text-muted" th:text="${'Hợp đồng: ' + rev.contract.contractCode + ' · ' + #temporals.format(rev.createdAt, 'dd/MM/yyyy HH:mm')}"></small>
+                                    <span th:if="${rev.updatedAt != null}" class="badge bg-secondary-subtle text-secondary small ms-1">Đã sửa</span>
                                 </div>
                                 <div class="text-warning fs-5">
                                     <span th:each="i : ${#numbers.sequence(1, 5)}">
@@ -121,6 +122,36 @@
                                 </div>
                             </div>
                             <p class="mb-2 text-dark" th:text="${rev.comment}"></p>
+
+                            <!-- Nút sửa đánh giá (cho phép trong vòng 7 ngày) -->
+                            <div th:if="${rev.isEditable()}" class="mb-2">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button"
+                                        data-bs-toggle="collapse" th:data-bs-target="${'#editReview' + rev.reviewId}"
+                                        aria-expanded="false">
+                                    <i class="bi bi-pencil me-1"></i>Sửa nhận xét (còn hạn 7 ngày)
+                                </button>
+                                <div class="collapse mt-2" th:id="${'editReview' + rev.reviewId}">
+                                    <div class="card card-body bg-white border">
+                                        <form th:action="@{/tenant/reviews/{id}/edit(id=${rev.reviewId})}" method="post">
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-semibold">Số sao:</label>
+                                                <select name="rating" class="form-select form-select-sm" style="width: 140px;">
+                                                    <option value="5" th:selected="${rev.rating == 5}">5 sao ★★★★★</option>
+                                                    <option value="4" th:selected="${rev.rating == 4}">4 sao ★★★★☆</option>
+                                                    <option value="3" th:selected="${rev.rating == 3}">3 sao ★★★☆☆</option>
+                                                    <option value="2" th:selected="${rev.rating == 2}">2 sao ★★☆☆☆</option>
+                                                    <option value="1" th:selected="${rev.rating == 1}">1 sao ★☆☆☆☆</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-semibold">Nhận xét:</label>
+                                                <textarea name="comment" class="form-control form-control-sm" rows="3" maxlength="1000" th:text="${rev.comment}" required></textarea>
+                                            </div>
+                                            <button type="submit" class="btn btn-sm btn-primary">Lưu thay đổi</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Phản hồi từ chủ trọ nếu có -->
                             <div th:if="${rev.replyComment != null}" class="bg-white border-start border-4 border-primary p-3 rounded mt-2">

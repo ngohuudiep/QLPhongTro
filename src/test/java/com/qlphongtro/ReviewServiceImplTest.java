@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +30,7 @@ class ReviewServiceImplTest {
     @Mock private RoomRepository roomRepository;
     @Mock private RoomListingRepository roomListingRepository;
     @Mock private UserRepository userRepository;
+    @Mock private UserNotificationRepository userNotificationRepository;
 
     private ReviewServiceImpl reviewService;
 
@@ -40,7 +43,7 @@ class ReviewServiceImplTest {
     @BeforeEach
     void setUp() {
         reviewService = new ReviewServiceImpl(
-                reviewRepository, contractRepository, roomRepository, roomListingRepository, userRepository);
+                reviewRepository, contractRepository, roomRepository, roomListingRepository, userRepository, userNotificationRepository);
 
         tenant = new User();
         tenant.setUserId(101);
@@ -69,10 +72,11 @@ class ReviewServiceImplTest {
         contract.setRoom(room);
         contract.setTenantUser(tenant);
         contract.setStatus("ACTIVE");
+        contract.setStartDate(LocalDate.now().minusDays(45)); // Đã thuê trên 30 ngày
     }
 
     @Test
-    @DisplayName("Khách thuê gửi đánh giá hợp lệ -> Lưu thành công và tính lại điểm")
+    @DisplayName("Khách thuê gửi đánh giá hợp lệ -> Lưu thành công, gửi thông báo và tính lại điểm")
     void createReviewSuccess() {
         when(userRepository.findByUsername("tenant1")).thenReturn(Optional.of(tenant));
         when(contractRepository.findById(303)).thenReturn(Optional.of(contract));
@@ -98,6 +102,7 @@ class ReviewServiceImplTest {
 
         verify(roomRepository).save(argThat(r -> r.getAverageRating().compareTo(new BigDecimal("4.80")) == 0 && r.getTotalReviews() == 1));
         verify(userRepository).save(argThat(u -> u.getAverageRating().compareTo(new BigDecimal("4.80")) == 0 && !u.isTopLandlord()));
+        verify(userNotificationRepository).save(any(UserNotification.class));
     }
 
     @Test
@@ -124,14 +129,28 @@ class ReviewServiceImplTest {
     }
 
     @Test
-    @DisplayName("Từ chối hợp đồng chưa có hiệu lực (ví dụ DRAFT)")
-    void createReviewRejectsDraftContract() {
-        contract.setStatus("DRAFT");
+    @DisplayName("Từ chối hợp đồng chưa đủ điều kiện (ACTIVE dưới 30 ngày)")
+    void createReviewRejectsActiveContractUnder30Days() {
+        contract.setStartDate(LocalDate.now().minusDays(10)); // Mới thuê 10 ngày
         when(userRepository.findByUsername("tenant1")).thenReturn(Optional.of(tenant));
         when(contractRepository.findById(303)).thenReturn(Optional.of(contract));
 
         assertThrows(IllegalStateException.class, () ->
                 reviewService.createReview("tenant1", 303, 5, "Đánh giá sớm"));
+    }
+
+    @Test
+    @DisplayName("Cho phép đánh giá nếu hợp đồng đã TERMINATED dù dưới 30 ngày")
+    void createReviewAllowsTerminatedContract() {
+        contract.setStatus("TERMINATED");
+        contract.setStartDate(LocalDate.now().minusDays(10));
+        when(userRepository.findByUsername("tenant1")).thenReturn(Optional.of(tenant));
+        when(contractRepository.findById(303)).thenReturn(Optional.of(contract));
+        when(reviewRepository.existsByContract_ContractId(303)).thenReturn(false);
+        when(reviewRepository.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Review review = reviewService.createReview("tenant1", 303, 4, "Phòng tốt");
+        assertNotNull(review);
     }
 
     @Test
@@ -146,8 +165,37 @@ class ReviewServiceImplTest {
     }
 
     @Test
-    @DisplayName("Chủ trọ phản hồi đánh giá thành công")
-    void replyReviewSuccess() {
+    @DisplayName("Khách sửa đánh giá trong vòng 7 ngày thành công")
+    void updateReviewSuccessWithin7Days() {
+        Review review = new Review(contract, room, tenant, landlord, 4, "Ban đầu");
+        review.setReviewId(10);
+        review.setCreatedAt(LocalDateTime.now().minusDays(2));
+
+        when(reviewRepository.findById(10)).thenReturn(Optional.of(review));
+        when(reviewRepository.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Review updated = reviewService.updateReview("tenant1", 10, 5, "Cập nhật thành 5 sao");
+        assertEquals(5, updated.getRating());
+        assertEquals("Cập nhật thành 5 sao", updated.getComment());
+        assertNotNull(updated.getUpdatedAt());
+    }
+
+    @Test
+    @DisplayName("Từ chối sửa đánh giá sau 7 ngày")
+    void updateReviewRejectsAfter7Days() {
+        Review review = new Review(contract, room, tenant, landlord, 4, "Ban đầu");
+        review.setReviewId(10);
+        review.setCreatedAt(LocalDateTime.now().minusDays(8)); // Đã qua 8 ngày
+
+        when(reviewRepository.findById(10)).thenReturn(Optional.of(review));
+
+        assertThrows(IllegalStateException.class, () ->
+                reviewService.updateReview("tenant1", 10, 5, "Sửa muộn"));
+    }
+
+    @Test
+    @DisplayName("Chủ trọ phản hồi đánh giá thành công và từ chối phản hồi lần 2")
+    void replyReviewSuccessAndRejectsDuplicate() {
         Review review = new Review(contract, room, tenant, landlord, 5, "Tốt");
         review.setReviewId(1);
 
@@ -159,6 +207,25 @@ class ReviewServiceImplTest {
 
         assertEquals("Cảm ơn bạn đã lựa chọn khu trọ!", replied.getReplyComment());
         assertNotNull(replied.getRepliedAt());
+
+        // Phản hồi lần 2 bị từ chối
+        assertThrows(IllegalStateException.class, () ->
+                reviewService.replyReview("landlord1", 1, "Phản hồi thêm lần nữa"));
+    }
+
+    @Test
+    @DisplayName("Báo cáo vi phạm đánh giá thành công")
+    void reportReviewSuccess() {
+        Review review = new Review(contract, room, tenant, landlord, 1, "Nói xấu");
+        review.setReviewId(5);
+        when(reviewRepository.findById(5)).thenReturn(Optional.of(review));
+        when(reviewRepository.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        reviewService.reportReview(5, "Nội dung mang tính công kích cá nhân");
+
+        assertTrue(review.getIsReported());
+        assertEquals("Nội dung mang tính công kích cá nhân", review.getReportReason());
+        assertNotNull(review.getReportedAt());
     }
 
     @Test
@@ -176,9 +243,10 @@ class ReviewServiceImplTest {
         when(reviewRepository.countVisibleReviewsForLandlord(202)).thenReturn(0L);
         when(userRepository.findById(202)).thenReturn(Optional.of(landlord));
 
-        reviewService.toggleReviewVisibility(2, false);
+        reviewService.toggleReviewVisibility(2, false, "Vi phạm điều khoản cộng đồng");
 
         assertEquals(Review.STATUS_HIDDEN, review.getStatus());
+        assertEquals("Vi phạm điều khoản cộng đồng", review.getHideReason());
         verify(roomRepository).save(argThat(r -> r.getAverageRating().compareTo(BigDecimal.ZERO) == 0 && r.getTotalReviews() == 0));
     }
 

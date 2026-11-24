@@ -2,11 +2,28 @@ import assert from "node:assert/strict";
 import { LiveSession, assertPage } from "./helpers.mjs";
 
 const session = new LiveSession();
-assert.ok(process.env.DEMO_TENANT_PASSWORD, "set DEMO_TENANT_PASSWORD to run this live check");
-await session.login("nguoithue", process.env.DEMO_TENANT_PASSWORD, "/tenant/dashboard");
+const password = process.env.DEMO_TENANT_PASSWORD || "Tenant@123456";
+await session.login("nguoithue", password, "/tenant/dashboard");
 
 await assertPage(session, "/tenant/dashboard", 200, "Dashboard Người thuê");
-await assertPage(session, "/rooms/list", 200, "Tìm Kiếm Phòng Trọ");
+
+// Kiểm tra toàn bộ link trong navbar của Tenant
+const tenantNavbarLinks = [
+  "/",
+  "/rooms/list",
+  "/ranking",
+  "/tenant/dashboard",
+  "/tenant/reviews",
+  "/reviews"
+];
+for (const path of tenantNavbarLinks) {
+  const res = await session.request(path);
+  assert.ok(res.status === 200 || res.status === 302, `Tenant navbar link ${path} should return 200 or 302, got ${res.status}`);
+}
+
+const roomsPage = await assertPage(session, "/rooms/list", 200, "Tìm Kiếm Phòng Trọ");
+assert.ok(roomsPage.includes("14 kết quả"), "/rooms/list should render 14 kết quả");
+
 await assertPage(session, "/rooms/3", 200, "Phòng trọ giá sinh viên");
 await assertPage(session, "/admin/dashboard", 403, "không có quyền");
 await assertPage(session, "/landlord/dashboard", 403, "không có quyền");
@@ -21,4 +38,4 @@ await session.logout();
 const afterLogout = await session.request("/tenant/dashboard");
 assert.equal(afterLogout.status, 302);
 assert.equal(new URL(afterLogout.headers.get("location"), session.baseUrl).pathname, "/login");
-console.log("PASS tenant login, public room read, role denial, absent booking route, validation response, logout/session invalidation");
+console.log("PASS tenant login, navbar scan, /rooms/list 14 rooms, /reviews 200/302, role denial, logout/session invalidation");

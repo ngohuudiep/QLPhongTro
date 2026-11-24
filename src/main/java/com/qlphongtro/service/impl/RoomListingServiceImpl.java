@@ -116,22 +116,34 @@ public class RoomListingServiceImpl implements RoomListingService {
         String st = (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) ? status.trim().toUpperCase() : null;
 
         // Nếu không có bất kỳ bộ lọc nào -> trả về tất cả phòng
+        List<RoomListing> result;
         if (kw == null && st == null && minPrice == null && maxPrice == null && floorNo == null) {
-            return roomListingRepository.findAll(sort);
-        }
-
-        // Nếu chỉ lọc theo trạng thái (chính là trường hợp phổ biến ở trang quản lý admin)
-        if (kw == null && st != null && minPrice == null && maxPrice == null && floorNo == null) {
+            result = roomListingRepository.findAll(sort);
+        } else if (kw == null && st != null && minPrice == null && maxPrice == null && floorNo == null) {
             List<RoomListing> byStatus = roomListingRepository.findByStatus(st, sort);
             if (byStatus != null && !byStatus.isEmpty()) {
-                return byStatus;
+                result = byStatus;
+            } else {
+                result = roomListingRepository.findAll(sort).stream()
+                        .filter(r -> st.equalsIgnoreCase(r.getStatus()))
+                        .toList();
             }
-            return roomListingRepository.findAll(sort).stream()
-                    .filter(r -> st.equalsIgnoreCase(r.getStatus()))
-                    .toList();
+        } else {
+            result = roomListingRepository.searchAndFilter(kw, st, minPrice, maxPrice, floorNo, sort);
         }
 
-        return roomListingRepository.searchAndFilter(kw, st, minPrice, maxPrice, floorNo, sort);
+        if ("rating_desc".equalsIgnoreCase(sortBy) && result != null) {
+            return result.stream()
+                    .sorted((a, b) -> {
+                        boolean aEligible = a.hasPublicRating();
+                        boolean bEligible = b.hasPublicRating();
+                        if (aEligible && !bEligible) return -1;
+                        if (!aEligible && bEligible) return 1;
+                        return b.getAverageRating().compareTo(a.getAverageRating());
+                    })
+                    .toList();
+        }
+        return result;
     }
 
     @Override

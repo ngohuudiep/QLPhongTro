@@ -3,10 +3,10 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head></head>
 <body>
-<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-navy sticky-top shadow-sm">
-    <div class="container">
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-navy sticky-top shadow-sm" style="z-index: 1040; background-color: #0f172a !important;">
+    <div class="container-fluid px-lg-4 px-3">
         <!-- Logo / Brand -->
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" th:href="@{/}">
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-nowrap" th:href="@{/}">
             <span class="brand-icon">
                 <i class="bi bi-houses-fill"></i>
             </span>
@@ -22,59 +22,59 @@
 
         <!-- Menu chính -->
         <div class="collapse navbar-collapse" id="navbarMain">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/' ? 'active' : ''}">
                         <i class="bi bi-house me-1"></i> Trang chủ
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/rooms/list}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/rooms/list' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/rooms/list}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/rooms/list' ? 'active' : ''}">
                         <i class="bi bi-grid me-1"></i> Tìm phòng trọ
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/ranking}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/ranking' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/ranking}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/ranking' ? 'active' : ''}">
                         <i class="bi bi-trophy-fill text-warning me-1"></i> Bảng xếp hạng
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                    <a class="nav-link" th:href="@{/admin/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/dashboard' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/admin/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/dashboard' ? 'active' : ''}">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard Admin
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                    <a class="nav-link" th:href="@{/admin/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/reviews' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/admin/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/reviews' ? 'active' : ''}">
                         <i class="bi bi-shield-check me-1"></i> Duyệt đánh giá
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasAnyRole('LANDLORD', 'STAFF')">
-                    <a class="nav-link" th:href="@{/landlord/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/landlord/dashboard' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/landlord/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/landlord/dashboard' ? 'active' : ''}">
                         <i class="bi bi-building me-1"></i> Dashboard Chủ trọ
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasAnyRole('LANDLORD', 'STAFF')">
-                    <a class="nav-link" th:href="@{/landlord/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/landlord/reviews' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/landlord/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/landlord/reviews' ? 'active' : ''}">
                         <i class="bi bi-star-half text-warning me-1"></i> Đánh giá & Phản hồi
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')">
-                    <a class="nav-link" th:href="@{/tenant/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/tenant/dashboard' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/tenant/dashboard}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/tenant/dashboard' ? 'active' : ''}">
                         <i class="bi bi-person-badge me-1"></i> Dashboard Người thuê
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')">
-                    <a class="nav-link" th:href="@{/tenant/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/tenant/reviews' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/tenant/reviews}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/tenant/reviews' ? 'active' : ''}">
                         <i class="bi bi-star-fill text-warning me-1"></i> Đánh giá phòng
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                    <a class="nav-link" th:href="@{/admin/rooms}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/rooms' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/admin/rooms}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/rooms' ? 'active' : ''}">
                         <i class="bi bi-sliders me-1"></i> Quản lý phòng
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                    <a class="nav-link" th:href="@{/admin/staff-assignments}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/staff-assignments' ? 'active' : ''}">
+                    <a class="nav-link text-nowrap" th:href="@{/admin/staff-assignments}" th:classappend="${#httpServletRequest != null && #httpServletRequest.requestURI == '/admin/staff-assignments' ? 'active' : ''}">
                         <i class="bi bi-person-workspace me-1"></i> Phân công Staff
                     </a>
                 </li>
@@ -84,31 +84,31 @@
             <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
                 <!-- Khi chưa đăng nhập (Chỉ hiển thị cho khách vãng lai) -->
                 <li class="nav-item" sec:authorize="!isAuthenticated()">
-                    <a class="btn btn-outline-light btn-sm px-3 rounded-pill" th:href="@{/login}">
+                    <a class="btn btn-outline-light btn-sm px-3 rounded-pill text-nowrap" th:href="@{/login}">
                         <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="!isAuthenticated()">
-                    <a class="btn btn-primary btn-sm px-3 rounded-pill btn-glow" th:href="@{/register}">
+                    <a class="btn btn-primary btn-sm px-3 rounded-pill btn-glow text-nowrap" th:href="@{/register}">
                         <i class="bi bi-person-plus me-1"></i> Đăng ký
                     </a>
                 </li>
 
-                <!-- Khi đã đăng nhập -->
-                <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-white"
+                <!-- Khi đã đăng nhập: Desktop Dropdown -->
+                <li class="nav-item dropdown position-relative" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-white text-nowrap"
                        href="#" id="userDropdown" role="button" data-bs-toggle="dropdown"
-                       aria-expanded="false">
+                       aria-expanded="false" style="cursor: pointer;">
                         <span class="user-avatar-sm">
                             <i class="bi bi-person-fill"></i>
                         </span>
                         <span sec:authentication="name" class="fw-semibold">Tài khoản</span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2"
-                        aria-labelledby="userDropdown" style="min-width: 200px;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2"
+                        aria-labelledby="userDropdown" style="min-width: 210px; z-index: 1050;">
                         <!-- Thông tin tóm tắt -->
-                        <li class="px-3 py-2 border-bottom mb-1">
-                            <div class="fw-bold" sec:authentication="name">Tài khoản</div>
+                        <li class="px-3 py-2 border-bottom mb-1 bg-light">
+                            <div class="fw-bold text-dark" sec:authentication="name">Tài khoản</div>
                             <div class="badge-status badge-status-empty py-0 px-2 mt-1" style="font-size: 0.72rem;">
                                 <span sec:authorize="hasRole('ADMIN')">Quản trị viên</span>
                                 <span sec:authorize="hasAnyRole('LANDLORD', 'STAFF')">Chủ trọ / Staff</span>
@@ -126,26 +126,65 @@
                             </a>
                         </li>
                         <li><hr class="dropdown-divider my-1"></li>
-                        <li sec:authorize="hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')">
-                            <form th:action="@{/logout}" method="post" class="px-2"
-                                  onsubmit="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
-                                <button type="submit" class="dropdown-item text-danger rounded-2 py-2">
-                                    <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-                                </button>
-                            </form>
-                        </li>
-                        <li sec:authorize="!hasAnyRole('TENANT', 'USER', 'NGUOITHUE', 'NGUOI_THUE')">
-                            <form th:action="@{/logout}" method="post" class="px-2">
-                                <button type="submit" class="dropdown-item text-danger rounded-2 py-2">
+                        <li>
+                            <form th:action="@{/logout}" method="post" class="px-2 m-0">
+                                <button type="submit" class="dropdown-item text-danger rounded-2 py-2 w-100 text-start border-0 bg-transparent">
                                     <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
                                 </button>
                             </form>
                         </li>
                     </ul>
                 </li>
+
+                <!-- Nút đăng xuất trực tiếp trên màn hình nhỏ/mobile khi menu xổ xuống -->
+                <li class="nav-item d-lg-none border-top pt-2 mt-2" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100 text-start py-2">
+                            <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất (<span sec:authentication="name"></span>)
+                        </button>
+                    </form>
+                </li>
             </ul>
         </div>
     </div>
 </nav>
+
+<!-- Script dự phòng độc lập: đảm bảo dropdown tài khoản bấm được 100% trong mọi tình huống (kể cả khi CDN JS tải chậm/lỗi) -->
+<script>
+(function() {
+    function setupDropdownFallback() {
+        var toggle = document.getElementById('userDropdown');
+        if (!toggle) return;
+        var menu = toggle.nextElementSibling;
+        if (!menu) return;
+
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var isOpen = menu.classList.contains('show');
+            if (isOpen) {
+                menu.classList.remove('show');
+                toggle.setAttribute('aria-expanded', 'false');
+            } else {
+                menu.classList.add('show');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.remove('show');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupDropdownFallback);
+    } else {
+        setupDropdownFallback();
+    }
+})();
+</script>
 </body>
 </html>

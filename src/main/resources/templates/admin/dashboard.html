@@ -17,9 +17,13 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
                     <div><h2 class="h5 fw-bold mb-1">Tổng quan hệ thống</h2><p class="text-secondary small mb-0">Số liệu được truy vấn trực tiếp từ ApartmentDB.</p></div>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-outline-warning text-dark" th:href="@{/admin/reviews}"><i class="bi bi-shield-check text-warning me-1"></i>Kiểm duyệt đánh giá</a>
+                        <a class="btn btn-outline-warning text-dark" th:href="@{/admin/reviews}"><i class="bi bi-shield-check text-warning me-1"></i>Kiểm duyệt đánh giá <span th:if="${reportedReviewsCount != null and reportedReviewsCount > 0}" class="badge bg-danger rounded-pill ms-1" th:text="${reportedReviewsCount}">0</span></a>
                         <a class="btn btn-primary" th:href="@{/admin/landlords/registrations}"><i class="bi bi-person-check me-1"></i>Yêu cầu chờ duyệt <span class="badge text-bg-light ms-1" th:text="${stats.pendingLandlordCount}">0</span></a>
                     </div>
+                </div>
+                <div th:if="${reportedReviewsCount != null and reportedReviewsCount > 0}" class="alert alert-warning d-flex align-items-center justify-content-between mb-3">
+                    <div><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Có <strong th:text="${reportedReviewsCount}">0</strong> đánh giá bị báo cáo vi phạm cần kiểm duyệt.</div>
+                    <a th:href="@{/admin/reviews(status='REPORTED')}" class="btn btn-sm btn-warning text-dark fw-bold">Xử lý ngay</a>
                 </div>
                 <div class="row g-3">
                     <div class="col-6 col-xl-3"><div class="admin-kpi"><div class="d-flex justify-content-between"><span class="admin-kpi-label">Tổng tài khoản</span><span class="admin-kpi-icon text-primary bg-primary-subtle"><i class="bi bi-people"></i></span></div><div class="admin-kpi-value" th:text="${stats.accountCount}">0</div><small class="text-secondary">Toàn hệ thống</small></div></div>

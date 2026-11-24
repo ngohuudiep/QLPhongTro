@@ -130,7 +130,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/room-images/**", "/webjars/**").permitAll()
                 .requestMatchers("/login", "/register", "/forgot-password/**", "/error", "/access-denied").permitAll()
-                .requestMatchers(HttpMethod.GET, "/", "/rooms/list", "/ranking").permitAll()
+                .requestMatchers(HttpMethod.GET, "/", "/rooms/list", "/ranking", "/reviews", "/danh-gia").permitAll()
                 .requestMatchers("/api/ranking/**", "/api/reviews/**").permitAll()
                 .requestMatchers(RegexRequestMatcher.regexMatcher(HttpMethod.GET, "\\A/rooms/[0-9]+\\z")).permitAll()
 
@@ -165,7 +165,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
                 .logoutSuccessUrl("/login?logout=true")
                 .clearAuthentication(true)
                 .invalidateHttpSession(true)

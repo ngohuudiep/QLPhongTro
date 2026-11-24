@@ -117,6 +117,10 @@ public class HomeController {
         Integer physicalRoomId = room.getManagedRoom() != null ? room.getManagedRoom().getRoomId() : (room.getRoom() != null ? room.getRoom().getRoomId() : null);
         List<com.qlphongtro.entity.Review> reviews = (reviewService != null && physicalRoomId != null) ? reviewService.getVisibleReviewsForRoom(physicalRoomId) : List.of();
         model.addAttribute("reviews", reviews);
+        java.util.Map<Integer, Long> starDistribution = (reviewService != null && physicalRoomId != null)
+                ? reviewService.getStarDistributionForRoom(physicalRoomId)
+                : java.util.Map.of(5, 0L, 4, 0L, 3, 0L, 2, 0L, 1, 0L);
+        model.addAttribute("starDistribution", starDistribution);
 
         List<RoomListing> similarRooms = roomListingService.getAvailableRooms().stream()
                 .filter(r -> !r.getListingId().equals(id))

@@ -151,6 +151,14 @@ public class Room {
         this.totalReviews = totalReviews;
     }
 
+    public boolean hasRating() {
+        return averageRating != null && averageRating.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public String getDisplayRating() {
+        return hasRating() ? averageRating.setScale(1, java.math.RoundingMode.HALF_UP).toString() : "—";
+    }
+
     public static class RoomBuilder {
         private Integer roomId;
         private String roomCode;

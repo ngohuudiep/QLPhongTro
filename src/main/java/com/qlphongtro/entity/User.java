@@ -256,6 +256,14 @@ public class User {
     public boolean isTopLandlord() { return topLandlord; }
     public void setTopLandlord(boolean topLandlord) { this.topLandlord = topLandlord; }
 
+    public boolean hasRating() {
+        return averageRating != null && averageRating.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public String getDisplayRating() {
+        return hasRating() ? averageRating.setScale(1, java.math.RoundingMode.HALF_UP).toString() : "—";
+    }
+
     @Override
     public String toString() {
         return "User{" +

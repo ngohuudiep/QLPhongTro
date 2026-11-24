@@ -52,6 +52,18 @@ public class Review {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "hide_reason", columnDefinition = "NVARCHAR(500)")
+    private String hideReason;
+
+    @Column(name = "is_reported", nullable = false)
+    private Boolean isReported = false;
+
+    @Column(name = "report_reason", columnDefinition = "NVARCHAR(500)")
+    private String reportReason;
+
+    @Column(name = "reported_at")
+    private LocalDateTime reportedAt;
+
     public Review() {}
 
     public Review(Contract contract, Room room, User tenantUser, User landlordUser, Integer rating, String comment) {
@@ -103,5 +115,22 @@ public class Review {
 
     public boolean isVisible() {
         return STATUS_VISIBLE.equalsIgnoreCase(this.status);
+    }
+
+    public String getHideReason() { return hideReason; }
+    public void setHideReason(String hideReason) { this.hideReason = hideReason; }
+
+    public Boolean getIsReported() { return isReported != null ? isReported : false; }
+    public void setIsReported(Boolean isReported) { this.isReported = isReported; }
+
+    public String getReportReason() { return reportReason; }
+    public void setReportReason(String reportReason) { this.reportReason = reportReason; }
+
+    public LocalDateTime getReportedAt() { return reportedAt; }
+    public void setReportedAt(LocalDateTime reportedAt) { this.reportedAt = reportedAt; }
+
+    public boolean isEditable() {
+        if (createdAt == null) return false;
+        return createdAt.isAfter(LocalDateTime.now().minusDays(7));
     }
 }

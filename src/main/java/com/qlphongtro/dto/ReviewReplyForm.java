@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 public class ReviewReplyForm {
 
     @NotBlank(message = "Vui lòng nhập nội dung phản hồi.")
-    @Size(max = 2000, message = "Nội dung phản hồi tối đa 2000 ký tự.")
+    @Size(max = 1000, message = "Nội dung phản hồi tối đa 1000 ký tự.")
     private String replyComment;
 
     public ReviewReplyForm() {}

@@ -89,6 +89,7 @@ public class RentalWorkflowController {
                     parsedOccupants, parsedMoveInDate, note);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã gửi yêu cầu thuê phòng thành công! Yêu cầu đã được gửi đến chủ trọ. Vui lòng chờ chủ trọ xác nhận.");
+            return "redirect:/tenant/rental/requests";
         } catch (NumberFormatException | DateTimeParseException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", "Ngày nhận phòng hoặc số người ở không hợp lệ.");
             preserveRentalForm(redirectAttributes, parsedListingId, expectedMoveInDate, expectedOccupants, note);

@@ -13,6 +13,7 @@ public class UserNotification {
     public static final String TYPE_DEPOSIT = "DEPOSIT";
     public static final String TYPE_CONTRACT_TERMINATION = "CONTRACT_TERMINATION";
     public static final String TYPE_ACCOUNT_REVIEW = "ACCOUNT_REVIEW";
+    public static final String TYPE_REVIEW = "REVIEW";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

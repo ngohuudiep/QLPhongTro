@@ -21,6 +21,10 @@
             </div>
             <a th:href="@{/landlord/rooms/new}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Thêm phòng</a>
         </div>
+        <div th:if="${unrepliedReviewsCount != null and unrepliedReviewsCount > 0}" class="alert alert-info d-flex align-items-center justify-content-between mb-4">
+            <div><i class="bi bi-chat-dots-fill text-primary me-2"></i>Bạn có <strong th:text="${unrepliedReviewsCount}">0</strong> đánh giá mới từ khách thuê chưa phản hồi.</div>
+            <a th:href="@{/landlord/reviews}" class="btn btn-sm btn-primary">Xem & Phản hồi</a>
+        </div>
         <div class="row g-3 mb-4">
             <div class="col-6 col-xl-3"><div class="landlord-stat-card"><div class="d-flex justify-content-between"><span class="landlord-stat-icon"><i class="bi bi-building"></i></span><span class="landlord-stat-label">Khu trọ</span></div><div class="landlord-stat-value" th:text="${stats.buildingCount}">0</div></div></div>
             <div class="col-6 col-xl-3"><div class="landlord-stat-card"><div class="d-flex justify-content-between"><span class="landlord-stat-icon"><i class="bi bi-door-open"></i></span><span class="landlord-stat-label">Tổng phòng</span></div><div class="landlord-stat-value" th:text="${stats.roomCount}">0</div></div></div>

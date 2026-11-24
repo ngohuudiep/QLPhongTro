@@ -24,10 +24,19 @@ public class AdminRoomController {
 
     private final RoomListingService roomListingService;
     private final AdminWorkspaceService adminWorkspaceService;
+    private final com.qlphongtro.service.ReviewService reviewService;
 
     public AdminRoomController(RoomListingService roomListingService, AdminWorkspaceService adminWorkspaceService) {
+        this(roomListingService, adminWorkspaceService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminRoomController(RoomListingService roomListingService,
+                               AdminWorkspaceService adminWorkspaceService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.qlphongtro.service.ReviewService reviewService) {
         this.roomListingService = roomListingService;
         this.adminWorkspaceService = adminWorkspaceService;
+        this.reviewService = reviewService;
     }
 
     @ModelAttribute("pendingCount")
@@ -54,6 +63,7 @@ public class AdminRoomController {
     @GetMapping("/admin/dashboard")
     public String showDashboard(Model model) {
         model.addAttribute("stats", safeStats());
+        model.addAttribute("reportedReviewsCount", reviewService != null ? reviewService.getReportedReviewsCount() : 0L);
         model.addAttribute("activePage", "dashboard");
         return "admin/dashboard";
     }

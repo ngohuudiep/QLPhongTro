@@ -287,4 +287,16 @@ public class RoomListing {
     public void setTotalReviews(Integer totalReviews) {
         this.totalReviews = totalReviews;
     }
+
+    public boolean hasRating() {
+        return averageRating != null && averageRating.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public boolean hasPublicRating() {
+        return totalReviews != null && totalReviews >= 3 && hasRating();
+    }
+
+    public String getDisplayRating() {
+        return hasRating() ? averageRating.setScale(1, java.math.RoundingMode.HALF_UP).toString() : "—";
+    }
 }
