@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hợp đồng - QLPhongTro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/landlord.css}">
+</head>
+<body class="landlord-app">
+<div class="landlord-layout">
+    <div th:replace="~{landlord/fragments :: sidebar(${activePage})}"></div>
+    <main class="landlord-main">
+        <div th:replace="~{landlord/fragments :: topbar(${contract.contractId == null ? 'Tạo hợp đồng thuê' : 'Chỉnh sửa hợp đồng'})}"></div>
+        <div th:replace="~{landlord/fragments :: alerts}"></div>
+        <section class="landlord-panel">
+            <form id="contractForm" class="p-3" th:action="${contract.contractId == null ? '/landlord/contracts' : '/landlord/contracts/' + contract.contractId}" th:object="${contract}" method="post">
+                <div class="row g-3">
+                    <div class="col-12"><h2 class="h6 fw-bold">A. Thông tin hợp đồng</h2><p class="form-text">Mã hợp đồng phải duy nhất. Trạng thái được quản lý theo vòng đời hợp đồng.</p></div>
+                    <div class="col-md-6"><label class="form-label">Mã hợp đồng *</label><input class="form-control" th:field="*{contractCode}" maxlength="30" required></div>
+                    <div class="col-md-6"><label class="form-label">Loại hợp đồng</label><input class="form-control" th:field="*{contractType}" maxlength="50" placeholder="Thuê phòng ở"></div>
+                    <div class="col-md-6"><label class="form-label">Ngày lập</label><input class="form-control" type="date" th:field="*{contractDate}"></div>
+                    <div class="col-md-6"><label class="form-label">Trạng thái</label><input class="form-control" th:value="${contract.contractId == null ? 'Hiệu lực sau khi lưu' : contract.status}" readonly></div>
+
+                    <div class="col-12"><hr><h2 class="h6 fw-bold">B. Thông tin phòng và khu trọ</h2><p class="form-text">Chỉ phòng trống, thuộc khu trọ của bạn và chưa có hợp đồng hiệu lực mới được chọn.</p></div>
+                    <div class="col-md-6" th:if="${contract.contractId == null}">
+                        <label class="form-label">Khu trọ</label>
+                        <select id="contractBuildingSelect" class="form-select">
+                            <option value="">Tất cả khu trọ</option>
+                            <option th:each="building : ${buildings}" th:value="${building.buildingId}" th:text="${building.buildingName}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" th:if="${contract.contractId == null}">
+                        <label class="form-label">Phòng còn trống *</label>
+                        <select id="contractRoomSelect" class="form-select" name="roomId" required>
+                            <option value="">Chọn phòng</option>
+                            <option th:each="room : ${rooms}" th:value="${room.roomId}"
+                                    th:text="${room.building.buildingName + ' — ' + room.roomCode}"
+                                    th:attr="data-building-id=${room.building.buildingId},data-building-name=${room.building.buildingName},data-address=${room.building.address},data-price=${room.priceOverride},data-capacity=${room.maxOccupants}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" th:if="${contract.contractId != null}">
+                        <label class="form-label">Phòng / khu trọ</label>
+                        <input class="form-control" th:value="${contract.room.building.buildingName + ' — ' + contract.room.roomCode}" readonly>
+                    </div>
+                    <div class="col-12" th:if="${contract.contractId == null}">
+                        <div id="roomSummary" class="alert alert-light border mb-0 d-none">
+                            <strong id="roomSummaryTitle"></strong>
+                            <div id="roomSummaryAddress" class="small text-secondary"></div>
+                            <div class="small mt-1">Giá thuê hiện tại: <span id="roomSummaryPrice">—</span> · Sức chứa: <span id="roomSummaryCapacity">—</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6"><label class="form-label">Ngày bắt đầu thuê *</label><input class="form-control" type="date" th:field="*{startDate}" required></div>
+                    <div class="col-md-6"><label class="form-label">Ngày kết thúc thuê *</label><input class="form-control" type="date" th:field="*{endDate}" required></div>
+                    <div class="col-md-6"><label class="form-label">Chu kỳ thanh toán (tháng)</label><input class="form-control" type="number" th:field="*{billingCycleMonths}" min="1" max="12" value="1" required></div>
+
+                    <div class="col-12"><hr><h2 class="h6 fw-bold">C. Thông tin người thuê</h2><p class="form-text">Ứng dụng chỉ lưu hồ sơ thuê, không tự tạo tài khoản đăng nhập.</p></div>
+                    <div class="col-12" th:if="${contract.contractId == null and !#lists.isEmpty(tenants)}">
+                        <label class="form-label">Tìm hồ sơ người thuê hiện có</label>
+                        <input id="tenantSearch" class="form-control mb-2" type="search" placeholder="Tên, số điện thoại hoặc email">
+                        <select id="tenantSelect" class="form-select" name="tenantId">
+                            <option value="">Tạo hồ sơ người thuê mới</option>
+                            <option th:each="tenant : ${tenants}" th:value="${tenant.tenantId}"
+                                    th:text="${tenant.fullName + ' — ' + tenant.phone}"
+                                    th:attr="data-search=${tenant.fullName + ' ' + tenant.phone + ' ' + tenant.email},data-full-name=${tenant.fullName},data-phone=${tenant.phone},data-email=${tenant.email},data-id-number=${tenant.idNumber},data-hometown=${tenant.hometown},data-date-of-birth=${tenant.dateOfBirth}"></option>
+                        </select>
+                    </div>
+                    <div class="col-12" th:if="${contract.contractId == null and !#lists.isEmpty(tenantAccounts)}">
+                        <label class="form-label">Hoặc chọn tài khoản Người thuê đã được duyệt</label>
+                        <input id="tenantAccountSearch" class="form-control mb-2" type="search" placeholder="Tên, tên đăng nhập, điện thoại hoặc email">
+                        <select id="tenantAccountSelect" class="form-select" name="tenantUserId">
+                            <option value="">Không liên kết tài khoản</option>
+                            <option th:each="account : ${tenantAccounts}" th:value="${account.userId}"
+                                    th:text="${account.fullName + ' — ' + account.username + ' — ' + account.phone}"
+                                    th:attr="data-search=${account.fullName + ' ' + account.username + ' ' + account.phone + ' ' + account.email},data-profile-id=${account.tenantId},data-full-name=${account.fullName},data-phone=${account.phone},data-email=${account.email},data-id-number=${account.idNumber},data-hometown=${account.hometown},data-date-of-birth=${account.dateOfBirth}"></option>
+                        </select>
+                        <div class="form-text">Nếu tài khoản chưa có hồ sơ thuê, cần nhập CCCD/CMND để tạo hồ sơ liên kết. Không tạo hay thay đổi tài khoản đăng nhập.</div>
+                    </div>
+                    <div class="col-md-6 tenant-input" th:if="${contract.contractId == null}"><label class="form-label">Họ tên *</label><input class="form-control" name="fullName" maxlength="150" required></div>
+                    <div class="col-md-6 tenant-input" th:if="${contract.contractId == null}"><label class="form-label">CCCD/CMND *</label><input class="form-control" name="idNumber" maxlength="20" required></div>
+                    <div class="col-md-6 tenant-input" th:if="${contract.contractId == null}"><label class="form-label">Số điện thoại *</label><input class="form-control" name="phone" maxlength="20" required></div>
+                    <div class="col-md-6 tenant-input" th:if="${contract.contractId == null}"><label class="form-label">Email</label><input class="form-control" type="email" name="email" maxlength="150"></div>
+                    <div class="col-md-6 tenant-input" th:if="${contract.contractId == null}"><label class="form-label">Địa chỉ thường trú</label><input class="form-control" name="hometown" maxlength="255"></div>
+                    <div class="col-md-6 tenant-input" th:if="${contract.contractId == null}"><label class="form-label">Ngày sinh</label><input class="form-control" type="date" name="dateOfBirth"></div>
+
+                    <div class="col-12"><hr><h2 class="h6 fw-bold">D. Thông tin tài chính</h2></div>
+                    <div class="col-md-6"><label class="form-label">Tiền thuê phòng / tháng (VNĐ) *</label><input id="monthlyRent" class="form-control" type="number" th:field="*{monthlyRent}" min="1" step="1000" required></div>
+                    <div class="col-md-6"><label class="form-label">Tiền đặt cọc (VNĐ)</label><input class="form-control" type="number" th:field="*{depositAmount}" min="0" step="1000"></div>
+                    <div class="col-md-6"><label class="form-label">Đơn giá điện (VNĐ/kWh)</label><input class="form-control" type="number" th:field="*{monthlyElectricPrice}" min="0" step="100"></div>
+                    <div class="col-md-6"><label class="form-label">Đơn giá nước (VNĐ/m³)</label><input class="form-control" type="number" th:field="*{monthlyWaterPrice}" min="0" step="100"></div>
+                    <div class="col-md-6"><label class="form-label">Internet (VNĐ/tháng)</label><input class="form-control" type="number" th:field="*{internetFee}" min="0" step="1000"></div>
+                    <div class="col-md-6"><label class="form-label">Phí vệ sinh (VNĐ/tháng)</label><input class="form-control" type="number" th:field="*{sanitationFee}" min="0" step="1000"></div>
+                    <div class="col-md-6"><label class="form-label">Phí dịch vụ (VNĐ/tháng)</label><input class="form-control" type="number" th:field="*{serviceFee}" min="0" step="1000"></div>
+                    <div class="col-md-6"><label class="form-label">Phí khác (VNĐ/tháng)</label><input class="form-control" type="number" th:field="*{otherServiceFee}" min="0" step="1000"></div>
+                    <div class="col-md-6"><label class="form-label">Ngày thanh toán hàng tháng</label><input class="form-control" type="number" th:field="*{paymentDay}" min="1" max="28"></div>
+                    <div class="col-md-6"><label class="form-label">Phương thức / ghi chú thanh toán</label><input class="form-control" th:field="*{paymentMethod}" maxlength="100" placeholder="Chuyển khoản / tiền mặt"></div>
+
+                    <div class="col-12"><hr><h2 class="h6 fw-bold">E. Điều khoản hợp đồng</h2><p class="form-text">Nội dung để hai bên xem xét, bổ sung và thỏa thuận; ứng dụng không tự xác nhận chữ ký hoặc tính pháp lý.</p></div>
+                    <div class="col-md-6"><label class="form-label">Thời gian thanh toán</label><textarea class="form-control" th:field="*{paymentTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Đặt cọc và hoàn trả cọc</label><textarea class="form-control" th:field="*{depositTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Điện, nước và dịch vụ</label><textarea class="form-control" th:field="*{utilityTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Tài sản và sử dụng phòng</label><textarea class="form-control" th:field="*{assetTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Sửa chữa và bồi thường</label><textarea class="form-control" th:field="*{repairTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Thông báo trước khi chấm dứt</label><textarea class="form-control" th:field="*{terminationTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Số người ở và quy định cư trú</label><textarea class="form-control" th:field="*{occupantTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Gia hạn hợp đồng</label><textarea class="form-control" th:field="*{renewalTerms}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Trách nhiệm Chủ trọ</label><textarea class="form-control" th:field="*{landlordResponsibilities}" rows="3"></textarea></div>
+                    <div class="col-md-6"><label class="form-label">Trách nhiệm Người thuê</label><textarea class="form-control" th:field="*{tenantResponsibilities}" rows="3"></textarea></div>
+                    <div class="col-12"><label class="form-label">Điều khoản bổ sung</label><textarea class="form-control" th:field="*{additionalTerms}" rows="4"></textarea></div>
+                </div>
+                <p class="form-text mt-3 mb-0">Hóa đơn được tạo thủ công theo chu kỳ trong mục Hóa đơn; đơn giá điện/nước tại đây là thông tin hợp đồng, còn cách tính hóa đơn hiện dùng chỉ số công tơ và dịch vụ phòng.</p>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a class="btn btn-outline-secondary" th:href="${contract.contractId == null ? '/landlord/contracts' : '/landlord/contracts/' + contract.contractId}">Hủy</a>
+                    <button id="saveContractButton" class="btn btn-primary" type="submit" th:text="${contract.contractId == null ? 'Tạo hợp đồng' : 'Lưu thay đổi'}"></button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+<script th:if="${contract.contractId == null}">
+    const tenantSelect = document.getElementById('tenantSelect');
+    const tenantSearch = document.getElementById('tenantSearch');
+    const tenantAccountSelect = document.getElementById('tenantAccountSelect');
+    const tenantAccountSearch = document.getElementById('tenantAccountSearch');
+    const tenantFields = document.querySelectorAll('.tenant-input input');
+    const tenantField = name => document.querySelector('[name="' + name + '"]');
+    const tenantDataKeys = {fullName: 'fullName', idNumber: 'idNumber', phone: 'phone', email: 'email', hometown: 'hometown', dateOfBirth: 'dateOfBirth'};
+    const fillTenantFields = (option, source) => {
+        const useExistingProfile = source === 'profile';
+        const useAccount = source === 'account';
+        tenantFields.forEach(input => {
+            input.disabled = useExistingProfile || (useAccount && option.dataset.profileId);
+            input.required = !input.disabled && ['fullName', 'idNumber', 'phone'].includes(input.name);
+            if (input.name === 'email') input.required = false;
+        });
+        tenantFields.forEach(input => input.value = option && option.value
+            ? (option.dataset[tenantDataKeys[input.name]] || '')
+            : '');
+        if (useAccount && !option.dataset.profileId) {
+            tenantField('fullName').value = option.dataset.fullName || '';
+            tenantField('phone').value = option.dataset.phone || '';
+            tenantField('email').value = option.dataset.email || '';
+        }
+    };
+    if (tenantSelect) tenantSelect.addEventListener('change', () => {
+        if (tenantSelect.value && tenantAccountSelect) tenantAccountSelect.value = '';
+        fillTenantFields(tenantSelect.selectedOptions[0], tenantSelect.value ? 'profile' : 'new');
+    });
+    if (tenantAccountSelect) tenantAccountSelect.addEventListener('change', () => {
+        if (tenantAccountSelect.value && tenantSelect) tenantSelect.value = '';
+        fillTenantFields(tenantAccountSelect.selectedOptions[0], tenantAccountSelect.value ? 'account' : 'new');
+    });
+    if (tenantSearch && tenantSelect) {
+        tenantSearch.addEventListener('input', () => {
+            const query = tenantSearch.value.toLocaleLowerCase();
+            Array.from(tenantSelect.options).forEach((option, index) => {
+                if (index > 0) option.hidden = !option.dataset.search.toLocaleLowerCase().includes(query);
+            });
+        });
+    }
+    if (tenantAccountSearch && tenantAccountSelect) {
+        tenantAccountSearch.addEventListener('input', () => {
+            const query = tenantAccountSearch.value.toLocaleLowerCase();
+            Array.from(tenantAccountSelect.options).forEach((option, index) => {
+                if (index > 0) option.hidden = !option.dataset.search.toLocaleLowerCase().includes(query);
+            });
+        });
+    }
+
+    const buildingSelect = document.getElementById('contractBuildingSelect');
+    const roomSelect = document.getElementById('contractRoomSelect');
+    const monthlyRent = document.getElementById('monthlyRent');
+    const roomSummary = document.getElementById('roomSummary');
+    const updateRoomSummary = () => {
+        const option = roomSelect.selectedOptions[0];
+        if (!option || !option.value) {
+            roomSummary.classList.add('d-none');
+            return;
+        }
+        roomSummary.classList.remove('d-none');
+        document.getElementById('roomSummaryTitle').textContent = option.dataset.buildingName + ' — ' + option.text.split(' — ').pop();
+        document.getElementById('roomSummaryAddress').textContent = option.dataset.address || '';
+        document.getElementById('roomSummaryPrice').textContent = option.dataset.price ? Number(option.dataset.price).toLocaleString('vi-VN') + ' ₫/tháng' : 'Chưa thiết lập';
+        document.getElementById('roomSummaryCapacity').textContent = option.dataset.capacity || 'Chưa thiết lập';
+        if (option.dataset.price) monthlyRent.value = option.dataset.price;
+    };
+    const filterRooms = () => {
+        Array.from(roomSelect.options).forEach((option, index) => {
+            if (index > 0) option.hidden = buildingSelect.value !== '' && option.dataset.buildingId !== buildingSelect.value;
+        });
+        if (roomSelect.selectedOptions[0] && roomSelect.selectedOptions[0].hidden) roomSelect.value = '';
+        updateRoomSummary();
+    };
+    buildingSelect.addEventListener('change', filterRooms);
+    roomSelect.addEventListener('change', updateRoomSummary);
+    filterRooms();
+</script>
+<script>
+    document.getElementById('contractForm').addEventListener('submit', () => {
+        const button = document.getElementById('saveContractButton');
+        button.disabled = true;
+        button.textContent = 'Đang lưu...';
+    });
+</script>
+</body>
+</html>

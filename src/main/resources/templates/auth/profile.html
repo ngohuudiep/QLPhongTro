@@ -36,9 +36,9 @@
                         <div class="mb-4">
                             <span class="badge-status badge-status-empty py-1 px-3">
                                 <i class="bi bi-shield-check"></i>
-                                <span th:if="${user.role.roleName == 'ADMIN'}">Chủ trọ (Quản trị viên)</span>
-                                <span th:if="${user.role.roleName == 'STAFF'}">Nhân viên vận hành</span>
-                                <span th:if="${user.role.roleName == 'USER'}">Người thuê phòng</span>
+                                <span th:if="${user.role.roleName == 'ADMIN'}">Quản trị viên</span>
+                                <span th:if="${user.role.roleName == 'LANDLORD'}">Chủ trọ</span>
+                                <span th:if="${user.role.roleName == 'TENANT'}">Người thuê phòng</span>
                             </span>
                         </div>
 

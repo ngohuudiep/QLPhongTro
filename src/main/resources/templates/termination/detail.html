@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chi tiết thanh lý - QLPhongTro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/landlord.css}" th:if="${isLandlord}">
+    <link rel="stylesheet" th:href="@{/css/theme.css}" th:unless="${isLandlord}">
+    <link rel="stylesheet" th:href="@{/css/tenant.css}" th:unless="${isLandlord}">
+    <style>
+        .settlement-card{border:1px solid #e7edf5;border-radius:1rem;background:#fff;padding:1.1rem}
+        .settlement-value{font-weight:700;color:#172b4d}
+        .audit-row{border-left:2px solid #dce5f2;padding:0 0 1rem 1rem;margin-left:.35rem}
+        .financial-highlight{background:#f1f6ff;border-radius:.75rem;padding:.8rem}
+    </style>
+</head>
+<body th:class="${isLandlord ? 'landlord-app' : ''}">
+<div th:unless="${isLandlord}" th:replace="~{layout/navbar :: navbar}"></div>
+<div class="landlord-layout" th:classappend="${isLandlord ? '' : ' tenant-page py-4'}">
+    <div th:if="${isLandlord}" th:replace="~{landlord/fragments :: sidebar(${activePage})}"></div>
+    <main th:class="${isLandlord ? 'landlord-main' : 'container tenant-shell'}">
+        <div th:if="${isLandlord}" th:replace="~{landlord/fragments :: topbar('Chi tiết chấm dứt hợp đồng')}"></div>
+        <div th:if="${isLandlord}" th:replace="~{landlord/fragments :: alerts}"></div>
+        <div th:unless="${isLandlord}" class="mb-3">
+            <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+        </div>
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div><a class="text-decoration-none" th:href="${isLandlord ? '/landlord/terminations' : '/tenant/terminations'}"><i class="bi bi-arrow-left me-1"></i>Danh sách yêu cầu</a>
+            <h1 class="h3 fw-bold mt-2 mb-1">Yêu cầu chấm dứt <span th:text="${'#' + terminationRequest.terminationRequestId}"></span></h1>
+            <span class="badge text-bg-light" th:text="${terminationRequest.status}"></span>
+        </div>
+        <div class="text-secondary small" th:text="${'Gửi lúc ' + #temporals.format(terminationRequest.createdAt, 'dd/MM/yyyy HH:mm')}"></div>
+    </div>
+    <div class="row g-3">
+        <div class="col-lg-5">
+            <section class="settlement-card mb-3">
+                <h2 class="h5 fw-bold"><i class="bi bi-file-earmark-text me-2"></i>Hợp đồng và phòng</h2>
+                <dl class="row mb-0">
+                    <dt class="col-5">Mã hợp đồng</dt><dd class="col-7" th:text="${terminationRequest.contract.contractCode}"></dd>
+                    <dt class="col-5">Phòng</dt><dd class="col-7" th:text="${terminationRequest.contract.room.roomCode + ' - ' + terminationRequest.contract.room.building.buildingName}"></dd>
+                    <dt class="col-5">Địa chỉ</dt><dd class="col-7" th:text="${terminationRequest.contract.room.building.address}"></dd>
+                    <dt class="col-5">Người thuê</dt><dd class="col-7" th:text="${terminationRequest.contract.tenantFullName ?: 'Chưa có thông tin'}"></dd>
+                    <dt class="col-5">Điện thoại</dt><dd class="col-7" th:text="${terminationRequest.contract.tenantPhone ?: '—'}"></dd>
+                    <dt class="col-5">Giá thuê</dt><dd class="col-7" th:text="${terminationRequest.contract.monthlyRent != null ? #numbers.formatDecimal(terminationRequest.contract.monthlyRent, 0, 'COMMA', 0, 'POINT') + ' ₫/tháng' : (terminationRequest.contract.room.priceOverride != null ? #numbers.formatDecimal(terminationRequest.contract.room.priceOverride, 0, 'COMMA', 0, 'POINT') + ' ₫/tháng' : 'Chưa cấu hình')}"></dd>
+                    <dt class="col-5">Thời hạn</dt><dd class="col-7" th:text="${(terminationRequest.contract.startDate != null ? #temporals.format(terminationRequest.contract.startDate, 'dd/MM/yyyy') : '—') + ' - ' + (terminationRequest.contract.endDate != null ? #temporals.format(terminationRequest.contract.endDate, 'dd/MM/yyyy') : 'Chưa cấu hình')}"></dd>
+                    <dt class="col-5">Trả phòng dự kiến</dt><dd class="col-7" th:text="${#temporals.format(terminationRequest.expectedTerminationDate, 'dd/MM/yyyy')}"></dd>
+                    <dt class="col-5">Tiền cọc trong hợp đồng</dt><dd class="col-7" th:text="${terminationRequest.contract.depositAmount != null ? #numbers.formatDecimal(terminationRequest.contract.depositAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa cấu hình'}"></dd>
+                </dl>
+            </section>
+            <section class="settlement-card mb-3">
+                <h2 class="h5 fw-bold"><i class="bi bi-chat-left-text me-2"></i>Nội dung yêu cầu</h2>
+                <p class="mb-1"><strong th:text="${terminationRequest.reasonCode}"></strong></p>
+                <p class="mb-2" th:text="${terminationRequest.reasonDetails}"></p>
+                <p class="text-secondary mb-2" th:if="${terminationRequest.notes != null}" th:text="${terminationRequest.notes}"></p>
+                <p class="text-secondary small mb-0" th:if="${terminationRequest.responseReason != null}" th:text="${'Phản hồi: ' + terminationRequest.responseReason}"></p>
+            </section>
+            <section class="settlement-card" th:if="${canRespond}">
+                <h2 class="h5 fw-bold">Phản hồi yêu cầu</h2>
+                <form method="post" th:action="${isLandlord ? '/landlord/terminations/' + terminationRequest.terminationRequestId + '/respond' : '/tenant/terminations/' + terminationRequest.terminationRequestId + '/respond'}" class="mb-2">
+                    <input type="hidden" name="accept" value="true">
+                    <label class="form-label" for="response-reason">Ghi chú phản hồi (không bắt buộc khi đồng ý)</label>
+                    <textarea id="response-reason" class="form-control mb-2" name="reason" rows="2" maxlength="1500"></textarea>
+                    <button class="btn btn-success" type="submit" onclick="return confirm('Xác nhận chấp nhận yêu cầu? Hợp đồng chưa kết thúc cho đến khi thanh lý hoàn tất.');">Chấp nhận yêu cầu</button>
+                </form>
+                <form method="post" th:action="${isLandlord ? '/landlord/terminations/' + terminationRequest.terminationRequestId + '/respond' : '/tenant/terminations/' + terminationRequest.terminationRequestId + '/respond'}" onsubmit="return confirm('Từ chối yêu cầu chấm dứt này?');">
+                    <input type="hidden" name="accept" value="false">
+                    <label class="form-label" for="reject-reason">Lý do từ chối</label>
+                    <textarea id="reject-reason" class="form-control mb-2" name="reason" rows="2" maxlength="1500" required></textarea>
+                    <button class="btn btn-outline-danger" type="submit">Từ chối yêu cầu</button>
+                </form>
+            </section>
+            <form th:if="${canCancel}" method="post" th:action="${isLandlord ? '/landlord/terminations/' + terminationRequest.terminationRequestId + '/cancel' : '/tenant/terminations/' + terminationRequest.terminationRequestId + '/cancel'}" class="mt-3" onsubmit="return confirm('Hủy yêu cầu đang chờ phản hồi?');">
+                <button class="btn btn-outline-secondary" type="submit">Hủy yêu cầu</button>
+            </form>
+        </div>
+        <div class="col-lg-7">
+            <section class="settlement-card mb-3">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div><h2 class="h5 fw-bold mb-1"><i class="bi bi-calculator me-2"></i>Bảng thanh lý</h2>
+                        <p class="text-secondary small">Thuê phần tháng được tính theo số ngày thực tế trong tháng. Số liệu thiếu phải được nhập/xác nhận.</p></div>
+                    <span class="badge text-bg-light" th:text="${settlement.status}"></span>
+                </div>
+                <form th:if="${canSettle}" method="post" th:action="@{/landlord/terminations/{id}/settlement(id=${terminationRequest.terminationRequestId})}" th:object="${settlementForm}">
+                    <div class="row g-2">
+                        <div class="col-md-6"><label class="form-label">Công nợ hóa đơn hiện hữu</label>
+                            <input class="form-control" type="text" readonly th:value="${settlement.unpaidInvoiceAmount != null ? #numbers.formatDecimal(settlement.unpaidInvoiceAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa có dữ liệu'}">
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Tiền thuê chưa lập hóa đơn đến ngày trả</label>
+                            <input class="form-control" type="number" min="0" step="0.01" th:field="*{rentThroughMoveOutAmount}" th:readonly="${settlement.rentThroughMoveOutAmount != null}" required>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Chỉ số điện cũ / mới</label>
+                            <div class="input-group"><input class="form-control" type="number" min="0" step="0.001" th:field="*{electricityOldReading}" required><input class="form-control" type="number" min="0" step="0.001" th:field="*{electricityNewReading}" required></div>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Đơn giá điện / kWh</label>
+                            <input class="form-control" type="number" min="0" step="0.01" th:field="*{electricityUnitPrice}" th:readonly="${terminationRequest.contract.monthlyElectricPrice != null}" required>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Chỉ số nước cũ / mới</label>
+                            <div class="input-group"><input class="form-control" type="number" min="0" step="0.001" th:field="*{waterOldReading}" required><input class="form-control" type="number" min="0" step="0.001" th:field="*{waterNewReading}" required></div>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Đơn giá nước / m³</label>
+                            <input class="form-control" type="number" min="0" step="0.01" th:field="*{waterUnitPrice}" th:readonly="${terminationRequest.contract.monthlyWaterPrice != null}" required>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">Phí dịch vụ cần thanh toán</label><input class="form-control" type="number" min="0" step="0.01" th:field="*{serviceFeeAmount}" required></div>
+                        <div class="col-md-6"><label class="form-label">Khoản bồi thường (nhập 0 nếu không có)</label><input class="form-control" type="number" min="0" step="0.01" th:field="*{compensationAmount}" required></div>
+                        <div class="col-12"><label class="form-label">Lý do bồi thường nếu có</label><input class="form-control" type="text" th:field="*{compensationReason}" maxlength="1000"></div>
+                        <div class="col-md-6"><label class="form-label">Tiền cọc ban đầu</label><input class="form-control" type="number" min="0" step="0.01" th:field="*{depositAmount}" th:readonly="${terminationRequest.contract.depositAmount != null}" required></div>
+                        <div class="col-md-6"><label class="form-label">Khấu trừ từ tiền cọc (nhập 0 nếu không có)</label><input class="form-control" type="number" min="0" step="0.01" th:field="*{depositDeductionAmount}" required></div>
+                        <div class="col-12"><label class="form-label">Lý do khấu trừ nếu có</label><input class="form-control" type="text" th:field="*{depositDeductionReason}" maxlength="1000"></div>
+                        <div class="col-12"><label class="form-label">Tình trạng bàn giao phòng</label><textarea class="form-control" th:field="*{roomHandoverCondition}" rows="2" maxlength="1500" required></textarea></div>
+                        <div class="col-12"><label class="form-label">Hư hỏng tài sản (nếu có)</label><textarea class="form-control" th:field="*{damageNotes}" rows="2" maxlength="1500"></textarea></div>
+                        <div class="col-12"><label class="form-label">Ghi chú thanh lý</label><textarea class="form-control" th:field="*{notes}" rows="2" maxlength="2000"></textarea></div>
+                    </div>
+                    <p class="small text-secondary mt-2 mb-2">Gửi bảng thanh lý sẽ xác nhận số liệu phía chủ trọ. Người thuê phải xác nhận hoặc ghi tranh chấp; không có giao dịch nào được tự ghi là đã thanh toán.</p>
+                    <button class="btn btn-primary mt-2" type="submit">Lưu và gửi bảng thanh lý</button>
+                </form>
+                <div th:unless="${canSettle}">
+                    <div class="row g-2 small">
+                        <div class="col-sm-6">Công nợ hóa đơn hiện hữu: <span class="settlement-value" th:text="${settlement.unpaidInvoiceAmount != null ? #numbers.formatDecimal(settlement.unpaidInvoiceAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Đã thanh toán theo hóa đơn: <span class="settlement-value" th:text="${settlement.paidInvoiceAmount != null ? #numbers.formatDecimal(settlement.paidInvoiceAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Tiền thuê đến ngày trả: <span class="settlement-value" th:text="${settlement.rentThroughMoveOutAmount != null ? #numbers.formatDecimal(settlement.rentThroughMoveOutAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Điện: <span class="settlement-value" th:text="${settlement.electricityAmount != null ? #numbers.formatDecimal(settlement.electricityAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Nước: <span class="settlement-value" th:text="${settlement.waterAmount != null ? #numbers.formatDecimal(settlement.waterAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Phí dịch vụ: <span class="settlement-value" th:text="${settlement.serviceFeeAmount != null ? #numbers.formatDecimal(settlement.serviceFeeAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Bồi thường: <span class="settlement-value" th:text="${settlement.compensationAmount != null ? #numbers.formatDecimal(settlement.compensationAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Tiền cọc: <span class="settlement-value" th:text="${settlement.depositAmount != null ? #numbers.formatDecimal(settlement.depositAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Khấu trừ: <span class="settlement-value" th:text="${settlement.depositDeductionAmount != null ? #numbers.formatDecimal(settlement.depositDeductionAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                        <div class="col-sm-6">Hoàn cọc dự kiến: <span class="settlement-value" th:text="${settlement.depositRefundAmount != null ? #numbers.formatDecimal(settlement.depositRefundAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></span></div>
+                    </div>
+                    <div class="financial-highlight mt-3">
+                        <div>Tổng nghĩa vụ còn phải trả = công nợ hóa đơn + tiền thuê chưa lập hóa đơn đến ngày trả + điện + nước + dịch vụ + bồi thường - khấu trừ cọc</div>
+                        <strong th:text="${settlement.totalDueAmount != null ? #numbers.formatDecimal(settlement.totalDueAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : 'Chưa xác định'}"></strong>
+                    </div>
+                    <p class="small text-secondary mt-2 mb-0" th:if="${settlement.roomHandoverCondition != null}" th:text="${'Bàn giao: ' + settlement.roomHandoverCondition}"></p>
+                    <p class="small text-secondary mt-1 mb-0" th:if="${settlement.damageNotes != null}" th:text="${'Hư hỏng: ' + settlement.damageNotes}"></p>
+                    <p class="small text-danger mt-2 mb-0" th:if="${settlement.disputeReason != null}" th:text="${'Tranh chấp: ' + settlement.disputeReason}"></p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3" th:if="${canConfirmSettlement}">
+                    <form method="post" th:action="@{/tenant/terminations/{id}/settlement/confirm(id=${terminationRequest.terminationRequestId})}" onsubmit="return confirm('Bạn xác nhận các số liệu và tình trạng bàn giao trên?');">
+                        <button class="btn btn-success" type="submit">Xác nhận bảng thanh lý</button>
+                    </form>
+                </div>
+                <form th:if="${canDispute}" method="post" th:action="${isLandlord ? '/landlord/terminations/' + terminationRequest.terminationRequestId + '/settlement/dispute' : '/tenant/terminations/' + terminationRequest.terminationRequestId + '/settlement/dispute'}" class="mt-3" onsubmit="return confirm('Ghi nhận tranh chấp? Phòng sẽ chưa được giải phóng.');">
+                    <label class="form-label">Ghi nhận tranh chấp</label>
+                    <div class="input-group"><input class="form-control" name="reason" maxlength="1500" required placeholder="Mô tả số liệu hoặc điều kiện chưa thống nhất"><button class="btn btn-outline-danger" type="submit">Báo tranh chấp</button></div>
+                </form>
+                <form th:if="${canConfirmTransfers}" method="post" th:action="@{/landlord/terminations/{id}/settlement/transfers(id=${terminationRequest.terminationRequestId})}" class="row g-2 mt-3">
+                    <div class="col-12"><strong>Đối chiếu giao dịch thực tế</strong><p class="small text-secondary mb-1">Chỉ nhập mã giao dịch sau khi đã kiểm tra tiền thực nhận/hoàn cọc. Hệ thống không tự tạo giao dịch thành công.</p></div>
+                    <div class="col-md-6"><label class="form-label">Mã giao dịch người thuê thanh toán</label><input class="form-control" name="tenantPaymentReference" maxlength="100" th:required="${settlement.totalDueAmount != null and settlement.totalDueAmount.signum() > 0}" th:value="${settlement.tenantPaymentReference}"></div>
+                    <div class="col-md-6"><label class="form-label">Mã giao dịch hoàn cọc</label><input class="form-control" name="depositRefundReference" maxlength="100" th:required="${settlement.depositRefundAmount != null and settlement.depositRefundAmount.signum() > 0}" th:value="${settlement.depositRefundReference}"></div>
+                    <div class="col-12"><button class="btn btn-outline-primary" type="submit">Lưu xác nhận giao dịch đã đối chiếu</button></div>
+                </form>
+                <form th:if="${canComplete}" method="post" th:action="@{/landlord/terminations/{id}/complete(id=${terminationRequest.terminationRequestId})}" class="mt-3" onsubmit="return confirm('Hoàn tất thanh lý? Hợp đồng sẽ chuyển sang TERMINATED và phòng có thể được giải phóng nếu không bảo trì.');">
+                    <button class="btn btn-danger" type="submit">Hoàn tất thanh lý và kết thúc hợp đồng</button>
+                </form>
+            </section>
+            <section class="settlement-card">
+                <h2 class="h5 fw-bold"><i class="bi bi-clock-history me-2"></i>Lịch sử xử lý</h2>
+                <div th:each="entry : ${history}" class="audit-row">
+                    <div class="fw-semibold" th:text="${entry.action}"></div>
+                    <div class="small text-secondary" th:text="${#temporals.format(entry.happenedAt, 'dd/MM/yyyy HH:mm') + ' · ' + (entry.actor.fullName ?: entry.actor.username)}"></div>
+                    <div class="small" th:if="${entry.details != null}" th:text="${entry.details}"></div>
+                </div>
+                <p class="text-secondary mb-0" th:if="${#lists.isEmpty(history)}">Chưa có lịch sử.</p>
+            </section>
+        </div>
+    </div>
+</main></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -26,4 +26,16 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     @Query("select distinct p from Payment p left join p.invoice i left join i.contract c left join c.representative rep left join rep.user ru left join c.contractTenants ct left join ct.tenant t left join t.user tu where i.invoiceId = :invoiceId and (ru.username = :username or tu.username = :username)")
     List<Payment> findByInvoiceIdAndTenantUsername(@Param("invoiceId") Integer invoiceId, @Param("username") String username);
+    Optional<Payment> findByTransactionCode(String transactionCode);
+    List<Payment> findByContract_ContractIdOrderByCreatedAtDesc(Integer contractId);
+    boolean existsByContract_ContractIdAndStatusIgnoreCase(Integer contractId, String status);
+
+    @Query("SELECT p FROM Payment p WHERE p.contract.contractId = :contractId AND UPPER(COALESCE(p.provider, '')) = 'DEPOSIT' ORDER BY p.createdAt DESC")
+    List<Payment> findDepositPaymentsByContractId(@Param("contractId") Integer contractId);
+
+    @Query("SELECT (COUNT(p) > 0) FROM Payment p WHERE p.contract.contractId = :contractId AND UPPER(COALESCE(p.provider, '')) = 'DEPOSIT' AND UPPER(COALESCE(p.status, '')) = UPPER(:status)")
+    boolean existsDepositPaymentByContractIdAndStatus(@Param("contractId") Integer contractId, @Param("status") String status);
+
+    @Query("SELECT (COUNT(p) > 0) FROM Payment p WHERE p.contract.contractId = :contractId AND UPPER(COALESCE(p.provider, '')) = 'DEPOSIT' AND UPPER(COALESCE(p.status, '')) IN ('SUCCESS', 'PENDING')")
+    boolean existsUnresolvedDepositPaymentByContractId(@Param("contractId") Integer contractId);
 }

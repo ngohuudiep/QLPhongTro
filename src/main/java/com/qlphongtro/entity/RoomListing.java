@@ -69,7 +69,7 @@ public class RoomListing {
 
     /** Danh sách tiện nghi (NVARCHAR hỗ trợ tiếng Việt có dấu) */
     @Column(name = "amenities", columnDefinition = "NVARCHAR(500)")
-    private String amenities = "Điều hòa, Wifi, Nóng lạnh";
+    private String amenities;
 
     /** URL ảnh đại diện chính */
     @Column(name = "image_url", length = 500)
@@ -96,10 +96,25 @@ public class RoomListing {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "total_reviews")
+    private Integer totalReviews = 0;
+
     /** Người tạo (Chủ trọ) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_user_id")
     private User createdBy;
+
+    /** Phòng vật lý tương ứng trong tòa nhà (nullable) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private Room room;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "managed_room_id")
+    private Room managedRoom;
 
     public RoomListing() {}
 
@@ -159,6 +174,7 @@ public class RoomListing {
         return imageUrl;
     }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getStoredImageUrl() { return imageUrl; }
 
     public String getImageGallery() { return imageGallery; }
     public void setImageGallery(String imageGallery) { this.imageGallery = imageGallery; }
@@ -180,6 +196,31 @@ public class RoomListing {
 
     public User getCreatedBy() { return createdBy; }
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+
+    public Room getManagedRoom() { return managedRoom != null ? managedRoom : room; }
+    public void setManagedRoom(Room managedRoom) {
+        this.managedRoom = managedRoom;
+        if (this.room == null) this.room = managedRoom;
+    }
+
+    public List<String> getImageUrls() {
+        List<String> urls = new ArrayList<>();
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            urls.add(imageUrl.trim());
+        }
+        if (imageGallery != null && !imageGallery.isBlank()) {
+            for (String raw : imageGallery.split("[,\n\r]+")) {
+                String clean = raw.trim();
+                if (!clean.isEmpty() && !urls.contains(clean)) {
+                    urls.add(clean);
+                }
+            }
+        }
+        return urls;
+    }
+
+    public Room getRoom() { return room != null ? room : managedRoom; }
+    public void setRoom(Room room) { this.room = room; }
 
     // ==================== View Helper Methods ====================
 
@@ -205,7 +246,7 @@ public class RoomListing {
 
     public List<String> getAmenityList() {
         if (amenities == null || amenities.trim().isEmpty()) {
-            return List.of("Wifi", "Nóng lạnh");
+            return List.of();
         }
         return Arrays.stream(amenities.split(","))
                 .map(String::trim)
@@ -229,5 +270,33 @@ public class RoomListing {
         if (price == null) return "0 đ";
         DecimalFormat df = new DecimalFormat("###,###,###");
         return df.format(price) + " đ";
+    }
+
+    public BigDecimal getAverageRating() {
+        return averageRating != null ? averageRating : BigDecimal.ZERO;
+    }
+
+    public void setAverageRating(BigDecimal averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Integer getTotalReviews() {
+        return totalReviews != null ? totalReviews : 0;
+    }
+
+    public void setTotalReviews(Integer totalReviews) {
+        this.totalReviews = totalReviews;
+    }
+
+    public boolean hasRating() {
+        return averageRating != null && averageRating.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public boolean hasPublicRating() {
+        return totalReviews != null && totalReviews >= 3 && hasRating();
+    }
+
+    public String getDisplayRating() {
+        return hasRating() ? averageRating.setScale(1, java.math.RoundingMode.HALF_UP).toString() : "—";
     }
 }

@@ -15,8 +15,27 @@ public class Payment {
 
     // Quan hệ ManyToOne tới Invoices
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invoice_id", nullable = false)
+    @JoinColumn(name = "invoice_id")
     private Invoice invoice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_id")
+    private Contract contract;
+
+    @Column(name = "transaction_code", length = 80)
+    private String transactionCode;
+
+    @Column(name = "status", length = 20)
+    private String status;
+
+    @Column(name = "provider", length = 30)
+    private String provider;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "processed_at")
+    private LocalDateTime processedAt;
 
     @Column(name = "amount", nullable = false, precision = 14, scale = 2)
     private BigDecimal amount;
@@ -88,6 +107,30 @@ public class Payment {
 
     public void setReferenceNo(String referenceNo) {
         this.referenceNo = referenceNo;
+    }
+
+    public Contract getContract() { return contract; }
+    public void setContract(Contract contract) { this.contract = contract; }
+    public String getTransactionCode() { return transactionCode; }
+    public void setTransactionCode(String transactionCode) { this.transactionCode = transactionCode; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getProcessedAt() { return processedAt; }
+    public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+
+    public String getStatusLabel() {
+        if (status == null) return "Không xác định";
+        return switch (status.toUpperCase(java.util.Locale.ROOT)) {
+            case "PENDING" -> "Chưa thanh toán / chờ xác nhận";
+            case "PROCESSING" -> "Đang xử lý";
+            case "SUCCESS" -> "Đã thanh toán";
+            case "FAILED", "FAILURE" -> "Thất bại";
+            default -> status;
+        };
     }
 
     public static class PaymentBuilder {

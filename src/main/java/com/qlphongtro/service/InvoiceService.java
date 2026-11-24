@@ -1,5 +1,7 @@
 package com.qlphongtro.service;
 
+import com.qlphongtro.dto.InvoiceCreateRequest;
+
 import com.qlphongtro.entity.Invoice;
 
 import java.time.LocalDate;
@@ -19,6 +21,14 @@ public interface InvoiceService {
 
     // Phiên bản nạp chồng tiện lợi nhận LocalDate
     Invoice generateMonthlyInvoice(Integer contractId, LocalDate month);
+
+    Invoice createMonthlyInvoice(InvoiceCreateRequest request, String landlordUsername);
+
+    Invoice getInvoiceForLandlord(Integer invoiceId, String landlordUsername);
+
+    void confirmInvoicePaidByLandlord(Integer invoiceId, String landlordUsername, String method, String referenceNo);
+
+    void cancelInvoice(Integer invoiceId, String landlordUsername);
 
     Invoice saveInvoice(Invoice invoice);
 

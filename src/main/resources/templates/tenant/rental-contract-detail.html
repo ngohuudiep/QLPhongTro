@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hợp đồng thuê phòng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}"><link rel="stylesheet" th:href="@{/css/tenant.css}">
+    <style>
+        .contract-document{max-width:980px;margin:auto;background:#fff;border:1px solid #e4e9f1;border-radius:12px;padding:clamp(1.2rem,4vw,3rem);box-shadow:0 12px 35px rgba(20,33,61,.06);font-family:Georgia,"Times New Roman",serif}
+        .contract-document h2,.contract-document h3{text-align:center}.contract-document h2{font-size:1.2rem;font-weight:700}.contract-document h3{font-size:1rem;font-weight:700;margin:1.4rem 0 .7rem}
+        .contract-document p{white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:.45rem}.contract-meta{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+        .contract-status{border-radius:999px;background:#edf4ff;color:#1d4ed8;padding:.35rem .7rem;font-size:.8rem;font-weight:700}
+        @media print{.main-navbar,.tenant-nav,.no-print{display:none!important}.tenant-page{padding:0!important}.contract-document{max-width:none;border:0;border-radius:0;box-shadow:none;padding:0}}
+    </style>
+</head>
+<body>
+<div th:replace="~{layout/navbar :: navbar}"></div>
+<main class="tenant-page py-4">
+    <div class="container tenant-shell">
+        <nav class="tenant-nav d-flex flex-wrap gap-2 mb-4 no-print">
+            <a class="btn" th:href="@{/tenant/dashboard}">Tổng quan</a>
+            <a class="btn" th:href="@{/tenant/room}">Phòng đang thuê</a>
+            <a class="btn active" th:href="@{/tenant/contracts}">Hợp đồng thuê phòng</a>
+            <a class="btn" th:href="@{/tenant/invoices}">Hóa đơn</a>
+            <a class="btn" th:href="@{/tenant/payments}">Thanh toán</a>
+            <a class="btn" th:href="@{/tenant/notifications}">Thông báo</a>
+        </nav>
+        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-print">
+            <a class="btn btn-outline-secondary" th:href="@{/tenant/contracts}"><i class="bi bi-arrow-left me-1"></i>Danh sách hợp đồng</a>
+            <button class="btn btn-outline-primary" type="button" onclick="window.print()"><i class="bi bi-printer me-1"></i>In / lưu PDF</button>
+        </div>
+
+        <article class="contract-document">
+            <header class="contract-meta d-flex flex-wrap justify-content-between gap-2 mb-3">
+                <div><h2>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h2><p class="text-center mb-1">Độc lập — Tự do — Hạnh phúc</p></div>
+                <div class="text-end"><strong th:text="${contract.contractCode}"></strong><div><span class="contract-status" th:text="${contract.statusLabel}"></span></div></div>
+            </header>
+            <hr>
+            <h2>HỢP ĐỒNG THUÊ PHÒNG</h2>
+            <p class="text-center">Ngày lập: <span th:text="${contract.contractDate != null ? #temporals.format(contract.contractDate,'dd/MM/yyyy') : 'Chưa ghi nhận'}"></span></p>
+
+            <h3>BÊN CHO THUÊ</h3>
+            <p>Họ và tên: <span th:text="${contract.landlordFullName ?: 'Chưa có thông tin trong hồ sơ'}"></span></p>
+            <p>Số điện thoại: <span th:text="${contract.landlordPhone ?: 'Chưa có thông tin trong hồ sơ'}"></span></p>
+            <p>Địa chỉ liên hệ: Chưa lưu trong hồ sơ chủ trọ.</p>
+
+            <h3>BÊN THUÊ</h3>
+            <p>Họ và tên: <span th:text="${contract.tenantFullName ?: 'Chưa có thông tin trong hồ sơ'}"></span></p>
+            <p>Số điện thoại: <span th:text="${contract.tenantPhone ?: 'Chưa cung cấp'}"></span></p>
+            <p>CCCD/CMND: <span th:text="${contract.tenantIdNumber ?: 'Chưa cung cấp'}"></span></p>
+            <p>Địa chỉ thường trú: <span th:text="${contract.tenantAddress ?: 'Chưa cung cấp'}"></span></p>
+            <p>Tài khoản: <span th:text="${contract.tenantUser != null ? contract.tenantUser.username : '—'}"></span></p>
+
+            <h3>PHÒNG THUÊ, THỜI HẠN VÀ CHI PHÍ</h3>
+            <p>Khu trọ / phòng: <span th:text="${contract.room.building.buildingName + ' / ' + contract.room.roomCode}"></span></p>
+            <p>Địa chỉ phòng trọ: <span th:text="${contract.room.building.address}"></span></p>
+            <p>Tên phòng: <span th:text="${contract.rentalRequest != null and contract.rentalRequest.room != null ? contract.rentalRequest.room.title : '—'}"></span></p>
+            <p>Diện tích: <span th:text="${contract.rentalRequest != null and contract.rentalRequest.room.area != null ? contract.rentalRequest.room.area + ' m²' : 'Chưa có dữ liệu'}"></span></p>
+            <p>Tiện nghi: <span th:text="${contract.roomAmenities ?: 'Chưa cấu hình'}"></span></p>
+            <p>Số người ở dự kiến: <span th:text="${contract.expectedOccupants != null ? contract.expectedOccupants : 'Chưa cung cấp'}"></span></p>
+            <p>Thời hạn: <span th:text="${contract.startDate != null ? #temporals.format(contract.startDate,'dd/MM/yyyy') : 'Chưa bổ sung'}"></span> đến <span th:text="${contract.endDate != null ? #temporals.format(contract.endDate,'dd/MM/yyyy') : 'Chưa bổ sung'}"></span></p>
+            <p>Tiền thuê hàng tháng: <span th:text="${contract.monthlyRent != null ? #numbers.formatDecimal(contract.monthlyRent,0,'COMMA',0,'POINT') + ' VNĐ' : 'Chưa cấu hình'}"></span></p>
+            <p>Tiền đặt cọc: <span th:text="${contract.depositAmount != null ? #numbers.formatDecimal(contract.depositAmount,0,'COMMA',0,'POINT') + ' VNĐ' : 'Chưa cấu hình'}"></span></p>
+            <p>Trạng thái tiền cọc: <strong th:text="${depositStatus}"></strong></p>
+            <p>Ngày thanh toán: <span th:text="${contract.paymentDay != null ? 'Ngày ' + contract.paymentDay : 'Chưa cấu hình'}"></span>; chu kỳ: <span th:text="${contract.billingCycleMonths != null ? contract.billingCycleMonths + ' tháng' : 'Chưa cấu hình'}"></span></p>
+            <p>Điện: <span th:text="${contract.monthlyElectricPrice != null ? #numbers.formatDecimal(contract.monthlyElectricPrice,0,'COMMA',0,'POINT') + ' VNĐ/kWh' : 'Chưa cấu hình'}"></span>; nước: <span th:text="${contract.monthlyWaterPrice != null ? #numbers.formatDecimal(contract.monthlyWaterPrice,0,'COMMA',0,'POINT') + ' VNĐ/m³' : 'Chưa cấu hình'}"></span></p>
+            <p>Internet: <span th:text="${contract.internetFee != null ? #numbers.formatDecimal(contract.internetFee,0,'COMMA',0,'POINT') + ' VNĐ/tháng' : 'Chưa cấu hình'}"></span>; phí dịch vụ: <span th:text="${contract.serviceFee != null ? #numbers.formatDecimal(contract.serviceFee,0,'COMMA',0,'POINT') + ' VNĐ/tháng' : 'Chưa cấu hình'}"></span></p>
+            <p>Vệ sinh: <span th:text="${contract.sanitationFee != null ? #numbers.formatDecimal(contract.sanitationFee,0,'COMMA',0,'POINT') + ' VNĐ/tháng' : 'Chưa cấu hình'}"></span>; phí khác: <span th:text="${contract.otherServiceFee != null ? #numbers.formatDecimal(contract.otherServiceFee,0,'COMMA',0,'POINT') + ' VNĐ/tháng' : 'Chưa cấu hình'}"></span></p>
+
+            <h3>ĐIỀU KHOẢN THỎA THUẬN</h3>
+            <p>Thanh toán: <span th:text="${contract.paymentTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Đặt cọc / hoàn trả: <span th:text="${contract.depositTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Điện, nước, dịch vụ: <span th:text="${contract.utilityTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Trách nhiệm chủ trọ: <span th:text="${contract.landlordResponsibilities ?: 'Chưa bổ sung'}"></span></p>
+            <p>Trách nhiệm người thuê: <span th:text="${contract.tenantResponsibilities ?: 'Chưa bổ sung'}"></span></p>
+            <p>Sử dụng phòng: <span th:text="${contract.occupantTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Tài sản bàn giao: <span th:text="${contract.assetTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Sửa chữa / bảo quản: <span th:text="${contract.repairTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Chấm dứt hợp đồng: <span th:text="${contract.terminationTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Gia hạn: <span th:text="${contract.renewalTerms ?: 'Chưa bổ sung'}"></span></p>
+            <p>Điều khoản khác: <span th:text="${contract.additionalTerms ?: 'Chưa bổ sung'}"></span></p>
+
+            <div class="row text-center mt-5 contract-meta">
+                <div class="col-6"><strong>BÊN CHO THUÊ</strong><p class="small text-secondary mt-5">Chữ ký và họ tên</p></div>
+                <div class="col-6"><strong>BÊN THUÊ</strong><p class="small text-secondary mt-5">Chữ ký và họ tên</p></div>
+            </div>
+            <footer class="contract-meta mt-3 small text-secondary">Thời điểm đồng ý: <span th:text="${contract.tenantAcceptedAt != null ? #temporals.format(contract.tenantAcceptedAt,'dd/MM/yyyy HH:mm') : 'Chưa đồng ý'}"></span></footer>
+        </article>
+
+        <section class="tenant-panel mt-3" th:if="${contract.status == 'SENT_TO_TENANT' or contract.status == 'PENDING_TENANT_CONFIRMATION'}">
+            <h2 class="h5 fw-bold">Phản hồi hợp đồng</h2>
+            <p class="text-secondary">Kiểm tra kỹ thông tin và điều khoản trước khi chọn. Từ chối sẽ không chuyển phòng sang trạng thái đã thuê.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <form th:action="@{/tenant/rental/contracts/{id}/accept(id=${contract.contractId})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button class="btn btn-success" type="submit" onclick="return confirm('Bạn xác nhận đồng ý với nội dung hợp đồng này?')"><i class="bi bi-check2-circle me-1"></i>Đồng ý hợp đồng</button>
+                </form>
+                <form th:action="@{/tenant/rental/contracts/{id}/reject(id=${contract.contractId})}" method="post" class="d-flex flex-grow-1 gap-2">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input class="form-control" name="reason" maxlength="500" required placeholder="Lý do từ chối">
+                    <button class="btn btn-outline-danger text-nowrap" type="submit" onclick="return confirm('Gửi phản hồi từ chối hợp đồng?')">Từ chối</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="tenant-panel mt-3" th:if="${contract.status == 'TENANT_ACCEPTED' or contract.status == 'ACTIVE'}">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div><h2 class="h5 fw-bold mb-1">Tiền đặt cọc</h2><p class="mb-0 text-secondary">Trạng thái: <strong th:text="${depositStatus}"></strong>. Đồng ý hợp đồng không tự xác nhận thanh toán.</p></div>
+                <form th:if="${canRequestDeposit}" th:action="@{/tenant/rental/contracts/{id}/deposit(id=${contract.contractId})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button class="btn btn-outline-primary" type="submit" onclick="return confirm('Tạo yêu cầu để chủ trọ đối chiếu tiền cọc thực tế?')"><i class="bi bi-bank me-1"></i>Gửi yêu cầu xác nhận tiền cọc</button>
+                </form>
+            </div>
+            <div class="alert alert-info mt-3 mb-0"
+                 th:if="${latestDepositRequest != null and latestDepositRequest.status == 'PENDING'}">
+                Đang chờ chủ trọ xác nhận đã nhận tiền đặt cọc.
+            </div>
+            <div class="alert alert-warning mt-3 mb-0"
+                 th:if="${latestDepositRequest != null and latestDepositRequest.status == 'REJECTED'}">
+                <strong>Yêu cầu bị từ chối:</strong>
+                <span th:text="${latestDepositRequest.rejectionReason}"></span>
+                Bạn có thể gửi yêu cầu mới sau khi đã trao đổi với chủ trọ.
+            </div>
+            <div class="table-responsive mt-3" th:if="${!#lists.isEmpty(depositRequests)}">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Lần gửi</th><th>Số tiền</th><th>Trạng thái</th><th>Phản hồi / lý do</th></tr></thead>
+                    <tbody>
+                    <tr th:each="request : ${depositRequests}">
+                        <td th:text="${#temporals.format(request.requestedAt,'dd/MM/yyyy HH:mm')}"></td>
+                        <td th:text="${#numbers.formatDecimal(request.amount,0,'COMMA',0,'POINT') + ' ₫'}"></td>
+                        <td th:text="${request.statusLabel}"></td>
+                        <td>
+                            <span th:if="${request.status == 'REJECTED'}" th:text="${request.rejectionReason}"></span>
+                            <span th:if="${request.status == 'APPROVED'}"
+                                  th:text="${request.respondedAt != null ? 'Xác nhận lúc ' + #temporals.format(request.respondedAt,'dd/MM/yyyy HH:mm') : 'Đã xác nhận'}"></span>
+                            <span th:if="${request.status == 'PENDING'}">Đang chờ chủ trọ xử lý</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-responsive mt-3"><table class="table align-middle mb-0"><thead><tr><th>Mã giao dịch</th><th>Số tiền</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>
+                <tr th:each="payment : ${payments}"><td th:text="${payment.transactionCode ?: '—'}"></td><td th:text="${payment.amount != null ? #numbers.formatDecimal(payment.amount,0,'COMMA',0,'POINT') + ' ₫' : '—'}"></td><td th:text="${payment.statusLabel}"></td><td th:text="${payment.processedAt != null ? #temporals.format(payment.processedAt,'dd/MM/yyyy HH:mm') : 'Chờ chủ trọ xác nhận'}"></td></tr>
+                <tr th:if="${#lists.isEmpty(payments)}"><td colspan="4" class="text-secondary">Chưa có giao dịch cọc.</td></tr>
+            </tbody></table></div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

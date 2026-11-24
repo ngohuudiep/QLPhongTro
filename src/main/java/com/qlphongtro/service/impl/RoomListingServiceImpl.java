@@ -2,6 +2,7 @@ package com.qlphongtro.service.impl;
 
 import com.qlphongtro.entity.RoomListing;
 import com.qlphongtro.repository.RoomListingRepository;
+import com.qlphongtro.repository.BookingRequestRepository;
 import com.qlphongtro.service.RoomListingService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +23,19 @@ import java.util.List;
 public class RoomListingServiceImpl implements RoomListingService {
 
     private final RoomListingRepository roomListingRepository;
+    private final BookingRequestRepository bookingRequestRepository;
     private final com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator;
     private final Environment environment;
     private final boolean demoRoomSeedEnabled;
 
     @Autowired
     public RoomListingServiceImpl(RoomListingRepository roomListingRepository,
+                                  BookingRequestRepository bookingRequestRepository,
                                   com.qlphongtro.config.DatabaseUnicodeMigrator databaseUnicodeMigrator,
                                   Environment environment,
                                   @Value("${app.seed.demo-rooms:false}") boolean demoRoomSeedEnabled) {
         this.roomListingRepository = roomListingRepository;
+        this.bookingRequestRepository = bookingRequestRepository;
         this.databaseUnicodeMigrator = databaseUnicodeMigrator;
         this.environment = environment;
         this.demoRoomSeedEnabled = demoRoomSeedEnabled;
@@ -52,7 +56,11 @@ public class RoomListingServiceImpl implements RoomListingService {
 
     @Override
     public List<RoomListing> getAvailableRooms() {
-        return roomListingRepository.findByStatusOrderByPriceAsc("TRONG");
+        List<RoomListing> rooms = roomListingRepository.findByStatusOrderByPriceAsc("TRONG");
+        if (rooms != null && !rooms.isEmpty()) {
+            return rooms;
+        }
+        return roomListingRepository.findByStatus("TRONG");
     }
 
     @Override
@@ -97,6 +105,10 @@ public class RoomListingServiceImpl implements RoomListingService {
             sort = Sort.by(Sort.Direction.DESC, "area");
         } else if ("newest".equalsIgnoreCase(sortBy)) {
             sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        } else if ("rating_desc".equalsIgnoreCase(sortBy)) {
+            sort = Sort.by(Sort.Direction.DESC, "averageRating").and(Sort.by(Sort.Direction.DESC, "totalReviews"));
+        } else if ("reviews_desc".equalsIgnoreCase(sortBy)) {
+            sort = Sort.by(Sort.Direction.DESC, "totalReviews").and(Sort.by(Sort.Direction.DESC, "averageRating"));
         }
 
         // 3. Chuẩn hóa bộ lọc
@@ -104,16 +116,34 @@ public class RoomListingServiceImpl implements RoomListingService {
         String st = (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) ? status.trim().toUpperCase() : null;
 
         // Nếu không có bất kỳ bộ lọc nào -> trả về tất cả phòng
+        List<RoomListing> result;
         if (kw == null && st == null && minPrice == null && maxPrice == null && floorNo == null) {
-            return roomListingRepository.findAll(sort);
+            result = roomListingRepository.findAll(sort);
+        } else if (kw == null && st != null && minPrice == null && maxPrice == null && floorNo == null) {
+            List<RoomListing> byStatus = roomListingRepository.findByStatus(st, sort);
+            if (byStatus != null && !byStatus.isEmpty()) {
+                result = byStatus;
+            } else {
+                result = roomListingRepository.findAll(sort).stream()
+                        .filter(r -> st.equalsIgnoreCase(r.getStatus()))
+                        .toList();
+            }
+        } else {
+            result = roomListingRepository.searchAndFilter(kw, st, minPrice, maxPrice, floorNo, sort);
         }
 
-        // Nếu chỉ lọc theo trạng thái (chính là trường hợp phổ biến ở trang quản lý admin)
-        if (kw == null && st != null && minPrice == null && maxPrice == null && floorNo == null) {
-            return roomListingRepository.findByStatus(st, sort);
+        if ("rating_desc".equalsIgnoreCase(sortBy) && result != null) {
+            return result.stream()
+                    .sorted((a, b) -> {
+                        boolean aEligible = a.hasPublicRating();
+                        boolean bEligible = b.hasPublicRating();
+                        if (aEligible && !bEligible) return -1;
+                        if (!aEligible && bEligible) return 1;
+                        return b.getAverageRating().compareTo(a.getAverageRating());
+                    })
+                    .toList();
         }
-
-        return roomListingRepository.searchAndFilter(kw, st, minPrice, maxPrice, floorNo, sort);
+        return result;
     }
 
     @Override
@@ -152,10 +182,15 @@ public class RoomListingServiceImpl implements RoomListingService {
     @Override
     @Transactional
     public void delete(Integer id) {
-        if (!roomListingRepository.existsById(id)) {
-            throw new IllegalArgumentException("Không tìm thấy phòng để xóa với ID: " + id);
+        RoomListing room = roomListingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phòng để xóa với ID: " + id));
+        if ("DA_THUE".equalsIgnoreCase(room.getStatus())) {
+            throw new IllegalStateException("Không thể xóa phòng đang được thuê; hãy giữ lại lịch sử.");
         }
-        roomListingRepository.deleteById(id);
+        if (bookingRequestRepository != null && bookingRequestRepository.existsByRoom_ListingId(id)) {
+            throw new IllegalStateException("Không thể xóa phòng đã có yêu cầu thuê liên quan; hãy giữ lại lịch sử.");
+        }
+        roomListingRepository.delete(room);
     }
 
     @Override

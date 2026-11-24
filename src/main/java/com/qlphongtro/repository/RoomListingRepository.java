@@ -2,6 +2,8 @@ package com.qlphongtro.repository;
 
 import com.qlphongtro.entity.RoomListing;
 import org.springframework.data.domain.Sort;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +21,17 @@ import java.util.Optional;
 public interface RoomListingRepository extends JpaRepository<RoomListing, Integer> {
 
     Optional<RoomListing> findByRoomCode(String roomCode);
+
+    Optional<RoomListing> findByManagedRoom_RoomId(Integer roomId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM RoomListing r WHERE r.managedRoom.roomId = :roomId")
+    Optional<RoomListing> findByManagedRoom_RoomIdForUpdate(@Param("roomId") Integer roomId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM RoomListing r LEFT JOIN FETCH r.managedRoom m " +
+           "LEFT JOIN FETCH m.building b LEFT JOIN FETCH b.owner WHERE r.listingId = :listingId")
+    Optional<RoomListing> findByIdForUpdate(@Param("listingId") Integer listingId);
 
     List<RoomListing> findByStatusOrderByPriceAsc(String status);
 
@@ -47,4 +60,6 @@ public interface RoomListingRepository extends JpaRepository<RoomListing, Intege
     boolean existsByRoomCode(String roomCode);
 
     long countByStatus(String status);
+
+    boolean existsByCreatedBy_UserId(Integer userId);
 }

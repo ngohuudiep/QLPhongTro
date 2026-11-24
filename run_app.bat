@@ -1,37 +1,59 @@
 @echo off
 setlocal
 chcp 65001 >nul
-title Quan Ly Phong Tro - Khoi Chay Ung Dung
+title QLPhongTro - Demo
 
-echo ==========================================================
-echo       DANG KHOI CHAY HE THONG QUAN LY PHONG TRO
-echo ==========================================================
-echo.
+set "JAVA_HOME=C:\Program Files\Java\jdk-17"
+if not exist "%JAVA_HOME%\bin\java.exe" (
+    echo [LOI] Khong tim thay JDK tai "%JAVA_HOME%".
+    pause
+    exit /b 1
+)
+set "PATH=C:\Users\Admin\apache-maven-3.9.6\bin;%JAVA_HOME%\bin;%PATH%"
+set "AUTH_DLL_DIR=%USERPROFILE%\qlphongtro-data\mssql-jdbc-auth\12.4.2\x64"
 
-set MAVEN_DIR=%USERPROFILE%\apache-maven-3.9.6
-set MVN_EXEC=mvn
 set "MAVEN_OPTS=-Dfile.encoding=UTF-8"
 
-if exist "%MAVEN_DIR%\bin\mvn.cmd" (
-    set "MVN_EXEC=%MAVEN_DIR%\bin\mvn.cmd"
+where mvn >nul 2>nul
+if errorlevel 1 (
+    echo [LOI] Khong tim thay Maven trong PATH.
+    echo Cai Maven 3.9.6 hoac them thu muc bin cua Maven vao PATH.
+    pause
+    exit /b 1
 )
 
 cd /d "%~dp0"
 
-echo [1/2] Dang kiem tra va bien dich du an...
-call "%MVN_EXEC%" compile -DskipTests
-if %ERRORLEVEL% neq 0 (
-    echo.
-    echo [!] Co loi xay ra trong qua trinh bien dich.
+echo Dang kiem tra SQL Server localhost:1435 (SQLEXPRESS01)...
+powershell -NoProfile -Command "if (Test-NetConnection localhost -Port 1435 -InformationLevel Quiet) { exit 0 } else { exit 1 }"
+if errorlevel 1 (
+    echo [LOI] Khong ket noi duoc SQLEXPRESS01 tai localhost:1435.
+    echo Hay bat TCP/IP port 1435 cho SQLEXPRESS01 va restart service MSSQL$SQLEXPRESS01.
     pause
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 
-echo.
-echo [2/2] Dang khoi dong ung dung Spring Boot tai http://localhost:8080...
-echo.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install_sqlserver_auth.ps1"
+if errorlevel 1 (
+    echo [LOI] Khong the cai thu vien xac thuc Windows cho SQL Server.
+    pause
+    exit /b 1
+)
 
-start "" powershell -NoProfile -ExecutionPolicy Bypass -Command "$ready = $false; for ($i=0; $i -lt 45; $i++) { Start-Sleep -Seconds 2; try { $tcp = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 8080); if ($tcp.Connected) { $tcp.Close(); $ready = $true; break; } } catch {} } if ($ready) { Start-Process 'http://localhost:8080' }"
+for /f "delims=" %%P in ('powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess"') do set "PORT_PID=%%P"
+if defined PORT_PID (
+    echo [LOI] Cong 8080 dang duoc su dung boi PID %PORT_PID%.
+    echo Hay dong ung dung dang dung cong nay roi chay lai.
+    pause
+    exit /b 1
+)
 
-call "%MVN_EXEC%" spring-boot:run
+echo Dang khoi dong QLPhongTro voi Windows Authentication...
+echo Khi thay dong "Started QlphongtroApplication", mo http://localhost:8080/login
+call mvn spring-boot:run -Dspring-boot.run.profiles=windows-auth "-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=false -Djava.library.path=%AUTH_DLL_DIR%"
+set "APP_EXIT_CODE=%ERRORLEVEL%"
+if not "%APP_EXIT_CODE%"=="0" (
+    echo [LOI] Spring Boot da dung voi ma loi %APP_EXIT_CODE%.
+)
 pause
+exit /b %APP_EXIT_CODE%

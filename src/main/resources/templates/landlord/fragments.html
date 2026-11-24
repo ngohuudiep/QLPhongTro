@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="vi">
+<body>
+<aside th:fragment="sidebar(activePage)" class="landlord-sidebar">
+    <a class="landlord-brand" th:href="@{/landlord/dashboard}">
+        <span class="landlord-brand-icon"><i class="bi bi-houses"></i></span>
+        <span>QLPhongTro <small>CHỦ TRỌ</small></span>
+    </a>
+    <nav class="landlord-nav" aria-label="Điều hướng chủ trọ">
+        <a th:href="@{/landlord/dashboard}" th:classappend="${activePage == 'dashboard' ? ' active' : ''}">
+            <i class="bi bi-grid-1x2"></i> Tổng quan
+        </a>
+        <a th:href="@{/landlord/buildings}" th:classappend="${activePage == 'buildings' ? ' active' : ''}">
+            <i class="bi bi-building"></i> Khu trọ
+        </a>
+        <a th:href="@{/landlord/rooms}" th:classappend="${activePage == 'rooms' ? ' active' : ''}">
+            <i class="bi bi-door-open"></i> Phòng trọ
+        </a>
+        <a th:href="@{/landlord/tenants}" th:classappend="${activePage == 'tenants' ? ' active' : ''}">
+            <i class="bi bi-people"></i> Người thuê
+        </a>
+        <a th:href="@{/landlord/contracts}" th:classappend="${activePage == 'contracts' ? ' active' : ''}">
+            <i class="bi bi-file-earmark-text"></i> Hợp đồng
+        </a>
+        <a th:href="@{/landlord/terminations}" th:classappend="${activePage == 'terminations' ? ' active' : ''}">
+            <i class="bi bi-file-earmark-x"></i> Quản lý hủy hợp đồng / thanh lý
+        </a>
+        <a th:href="@{/landlord/rental/requests}" th:classappend="${activePage == 'rental-requests' ? ' active' : ''}">
+            <i class="bi bi-person-check"></i> Yêu cầu thuê
+        </a>
+        <a th:href="@{/landlord/rental/deposit-requests}" th:classappend="${activePage == 'deposit-requests' ? ' active' : ''}">
+            <i class="bi bi-bank"></i> Xác nhận tiền cọc
+        </a>
+        <a th:href="@{/landlord/notifications}" th:classappend="${activePage == 'notifications' ? ' active' : ''}">
+            <i class="bi bi-bell"></i> Thông báo
+        </a>
+        <a th:href="@{/landlord/invoices}" th:classappend="${activePage == 'invoices' ? ' active' : ''}">
+            <i class="bi bi-receipt"></i> Hóa đơn
+        </a>
+    </nav>
+    <div class="landlord-sidebar-bottom">
+        <a th:href="@{/}" target="_blank"><i class="bi bi-box-arrow-up-right"></i> Xem trang công khai</a>
+    </div>
+</aside>
+
+<header th:fragment="topbar(title)" class="landlord-topbar">
+    <div>
+        <div class="landlord-eyebrow">KHÔNG GIAN QUẢN LÝ</div>
+        <h1 th:text="${title}">Tổng quan</h1>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <div class="landlord-user">
+            <span class="landlord-avatar"><i class="bi bi-person"></i></span>
+            <span sec:authentication="name">Chủ trọ</span>
+        </div>
+        <form th:action="@{/logout}" method="post" class="m-0">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Đăng xuất</span>
+            </button>
+        </form>
+    </div>
+</header>
+
+<div th:fragment="alerts" class="landlord-alerts">
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+</body>
+</html>

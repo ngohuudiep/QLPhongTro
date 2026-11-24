@@ -18,7 +18,7 @@ public class BuildingAccess {
     }
 
     public boolean isStaff() {
-        return CurrentUser.hasRole("STAFF");
+        return CurrentUser.hasRole("STAFF") && !CurrentUser.hasRole("ADMIN") && !CurrentUser.hasRole("LANDLORD");
     }
 
     public List<Integer> assignedBuildingIds() {

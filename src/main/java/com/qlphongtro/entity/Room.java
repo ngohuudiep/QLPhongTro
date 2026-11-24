@@ -34,6 +34,12 @@ public class Room {
     @Column(name = "status", length = 15)
     private String status;
 
+    @Column(name = "average_rating", precision = 3, scale = 2)
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "total_reviews")
+    private Integer totalReviews = 0;
+
     // Quan hệ 1-Nhiều với Room_Services (Bảng trung gian dịch vụ theo phòng)
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RoomService> roomServices = new ArrayList<>();
@@ -127,6 +133,30 @@ public class Room {
 
     public void setMeterReadings(List<MeterReading> meterReadings) {
         this.meterReadings = meterReadings;
+    }
+
+    public BigDecimal getAverageRating() {
+        return averageRating != null ? averageRating : BigDecimal.ZERO;
+    }
+
+    public void setAverageRating(BigDecimal averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Integer getTotalReviews() {
+        return totalReviews != null ? totalReviews : 0;
+    }
+
+    public void setTotalReviews(Integer totalReviews) {
+        this.totalReviews = totalReviews;
+    }
+
+    public boolean hasRating() {
+        return averageRating != null && averageRating.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public String getDisplayRating() {
+        return hasRating() ? averageRating.setScale(1, java.math.RoundingMode.HALF_UP).toString() : "—";
     }
 
     public static class RoomBuilder {

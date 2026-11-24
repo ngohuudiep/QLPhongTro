@@ -24,10 +24,21 @@ if defined JDK17_HOME (
 
 set "JAVA_HOME=%JDK17_HOME%"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
+where mvn >nul 2>&1
+if errorlevel 1 (
+    if exist "%USERPROFILE%\apache-maven-3.9.6\bin\mvn.cmd" set "PATH=%USERPROFILE%\apache-maven-3.9.6\bin;%PATH%"
+    if exist "C:\Users\Admin\apache-maven-3.9.6\bin\mvn.cmd" set "PATH=C:\Users\Admin\apache-maven-3.9.6\bin;%PATH%"
+)
 java -version
 if errorlevel 1 exit /b 1
 
+if exist "C:\Users\Admin\apache-maven-3.9.6\bin\mvn.cmd" goto :run_direct
 call mvn %*
+exit /b %ERRORLEVEL%
+
+:run_direct
+call "C:\Users\Admin\apache-maven-3.9.6\bin\mvn.cmd" %*
+exit /b %ERRORLEVEL%
 exit /b %ERRORLEVEL%
 
 :validate

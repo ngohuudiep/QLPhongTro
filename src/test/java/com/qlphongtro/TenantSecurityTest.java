@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TenantController.class)
@@ -93,8 +94,9 @@ class TenantSecurityTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void logoutCannotBeTriggeredWithGet() throws Exception {
+    void logoutCanBeTriggeredWithGet() throws Exception {
         mockMvc.perform(get("/logout"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?logout=true"));
     }
 }

@@ -14,4 +14,5 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
 
     /** Tìm Role theo tên (ADMIN, STAFF, USER) */
     Optional<Role> findByRoleName(String roleName);
+    Optional<Role> findByRoleNameIgnoreCase(String roleName);
 }

@@ -38,4 +38,6 @@ public interface MeterReadingRepository extends JpaRepository<MeterReading, Inte
 
     @Query("select mr from MeterReading mr where mr.room.roomId = :roomId and mr.billingMonth = :billingMonth and exists (select c.contractId from Contract c left join c.representative rep left join rep.user ru left join c.contractTenants ct left join ct.tenant t left join t.user tu where c.room = mr.room and (ru.username = :username or tu.username = :username))")
     Optional<MeterReading> findByRoomIdAndBillingMonthAndTenantUsername(@Param("roomId") Integer roomId, @Param("billingMonth") LocalDate billingMonth, @Param("username") String username);
+    boolean existsByRoom_RoomId(Integer roomId);
+    Optional<MeterReading> findFirstByRoom_RoomIdOrderByReadDateDesc(Integer roomId);
 }
