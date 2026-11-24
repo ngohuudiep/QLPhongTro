@@ -50,4 +50,22 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM User u WHERE u.role.roleName = 'ADMIN' AND u.accountEnabled = true ORDER BY u.userId")
     List<User> findActiveAdministratorsForUpdate();
+    boolean existsByEmailAndUserIdNot(String email, Integer userId);
+    boolean existsByPhoneAndUserIdNot(String phone, Integer userId);
+    long countByRole_RoleNameIgnoreCase(String roleName);
+    long countByRole_RoleNameIgnoreCaseAndAccountStatusIgnoreCase(String roleName, String accountStatus);
+    List<User> findByRole_RoleNameIgnoreCaseAndAccountStatusIgnoreCaseOrderByRegisteredAtAsc(String roleName, String accountStatus);
+
+    @Query("SELECT u FROM User u JOIN FETCH u.role r WHERE " +
+           "UPPER(r.roleName) = UPPER(:roleName) " +
+           "AND (:keyword IS NULL OR :keyword = '' OR " +
+           "LOWER(COALESCE(u.fullName, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(COALESCE(u.email, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY u.userId DESC")
+    List<User> searchAccountsByRole(@Param("roleName") String roleName, @Param("keyword") String keyword);
+
+    @Query("SELECT u FROM User u JOIN FETCH u.role r WHERE UPPER(r.roleName) IN ('LANDLORD', 'ROLE_LANDLORD') AND UPPER(u.accountStatus) = 'APPROVED' ORDER BY u.topLandlord DESC, u.averageRating DESC, u.totalReviews DESC")
+    List<User> findTopLandlords();
 }

@@ -26,6 +26,16 @@ public class Building {
     @Column(name = "total_floors")
     private Short totalFloors;
 
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    private String description;
+
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    private User owner;
+
     public Building() {
     }
 
@@ -86,6 +96,30 @@ public class Building {
         this.totalFloors = totalFloors;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
     public static class BuildingBuilder {
         private Integer buildingId;
         private String buildingCode;
@@ -93,6 +127,9 @@ public class Building {
         private String address;
         private String city;
         private Short totalFloors;
+        private String description;
+        private String contactPhone;
+        private User owner;
 
         BuildingBuilder() {}
 
@@ -126,8 +163,27 @@ public class Building {
             return this;
         }
 
+        public BuildingBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public BuildingBuilder contactPhone(String contactPhone) {
+            this.contactPhone = contactPhone;
+            return this;
+        }
+
+        public BuildingBuilder owner(User owner) {
+            this.owner = owner;
+            return this;
+        }
+
         public Building build() {
-            return new Building(buildingId, buildingCode, buildingName, address, city, totalFloors);
+            Building b = new Building(buildingId, buildingCode, buildingName, address, city, totalFloors);
+            b.setDescription(description);
+            b.setContactPhone(contactPhone);
+            b.setOwner(owner);
+            return b;
         }
     }
 

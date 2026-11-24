@@ -20,7 +20,14 @@ public class Incident {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
-    private Tenant reportedBy;
+    private Tenant tenant;
+
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_by_user_id")
+    private User reportedBy;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -70,8 +77,25 @@ public class Incident {
         this.room = room;
     }
 
-    public Tenant getReportedBy() { return reportedBy; }
-    public void setReportedBy(Tenant reportedBy) { this.reportedBy = reportedBy; }
+    public User getReportedBy() { return reportedBy; }
+    public void setReportedBy(User reportedBy) { this.reportedBy = reportedBy; }
+    public void setReportedBy(Tenant tenant) {
+        this.tenant = tenant;
+        if (tenant != null && tenant.getUser() != null) {
+            this.reportedBy = tenant.getUser();
+        }
+    }
+
+    public Tenant getTenant() { return tenant; }
+    public void setTenant(Tenant tenant) { this.tenant = tenant; }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     public String getTitle() {
         return title;
@@ -124,6 +148,9 @@ public class Incident {
     public static class IncidentBuilder {
         private Integer incidentId;
         private Room room;
+        private Tenant tenant;
+        private String description;
+        private User reportedBy;
         private String title;
         private String priority;
         private String status;
@@ -140,6 +167,21 @@ public class Incident {
 
         public IncidentBuilder room(Room room) {
             this.room = room;
+            return this;
+        }
+
+        public IncidentBuilder tenant(Tenant tenant) {
+            this.tenant = tenant;
+            return this;
+        }
+
+        public IncidentBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public IncidentBuilder reportedBy(User reportedBy) {
+            this.reportedBy = reportedBy;
             return this;
         }
 
@@ -174,7 +216,13 @@ public class Incident {
         }
 
         public Incident build() {
-            return new Incident(incidentId, room, title, priority, status, repairCost, reportedAt, resolvedAt);
+            Incident inc = new Incident(incidentId, room, title, priority, status, repairCost, reportedAt, resolvedAt);
+            inc.setDescription(description);
+            inc.setTenant(tenant);
+            if (reportedBy != null) {
+                inc.setReportedBy(reportedBy);
+            }
+            return inc;
         }
     }
 

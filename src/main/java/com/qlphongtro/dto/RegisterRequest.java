@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
  *  - SĐT Việt Nam hợp lệ (đầu 03, 05, 07, 08, 09 gồm 10 số)
  *  - Mật khẩu tối thiểu 8 ký tự, có cả chữ và số
  */
-public class RegisterRequest {
+public class RegisterRequest extends BaseRegistrationRequest {
 
     @NotBlank(message = "Họ và tên không được để trống")
     @Size(max = 150, message = "Họ tên tối đa 150 ký tự")
@@ -30,6 +30,9 @@ public class RegisterRequest {
     @NotBlank(message = "Số điện thoại không được để trống")
     @Pattern(regexp = "^(0[3|5|7|8|9])[0-9]{8}$", message = "Số điện thoại Việt Nam không hợp lệ (10 chữ số)")
     private String phone;
+
+    @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
+    private String contactAddress;
 
     @NotBlank(message = "Mật khẩu không được để trống")
     @Size(min = 8, message = "Mật khẩu tối thiểu 8 ký tự")
@@ -53,6 +56,9 @@ public class RegisterRequest {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getContactAddress() { return contactAddress; }
+    public void setContactAddress(String contactAddress) { this.contactAddress = contactAddress; }
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }

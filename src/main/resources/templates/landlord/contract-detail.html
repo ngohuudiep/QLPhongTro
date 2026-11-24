@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chi tiết hợp đồng - QLPhongTro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/landlord.css}">
+    <style>@media print {.landlord-sidebar,.landlord-topbar,.no-print {display:none!important}.landlord-main{padding:0}.landlord-form-card{max-width:none;border:0;box-shadow:none}}</style>
+</head>
+<body class="landlord-app">
+<div class="landlord-layout">
+    <div th:replace="~{landlord/fragments :: sidebar(${activePage})}"></div>
+    <main class="landlord-main">
+        <div th:replace="~{landlord/fragments :: topbar('Chi tiết hợp đồng')}"></div>
+        <section class="landlord-form-card">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div><h2 class="h4 fw-bold">HỢP ĐỒNG THUÊ PHÒNG</h2><p class="mb-1">Mã hợp đồng: <strong th:text="${contract.contractCode}"></strong></p><p th:text="${contract.contractType ?: 'Thuê phòng ở'}"></p></div>
+                <div class="text-end"><div>Trạng thái</div><strong th:text="${contract.status}"></strong></div>
+            </div>
+            <hr>
+            <dl class="row">
+                <dt class="col-sm-4">Khu trọ / Phòng</dt><dd class="col-sm-8" th:text="${contract.room.building.buildingName + ' — ' + contract.room.roomCode}"></dd>
+                <dt class="col-sm-4">Địa chỉ</dt><dd class="col-sm-8" th:text="${contract.room.building.address}"></dd>
+                <dt class="col-sm-4">Người thuê đại diện</dt><dd class="col-sm-8" th:text="${contract.tenantFullName ?: 'Chưa liên kết người thuê'}"></dd>
+                <dt class="col-sm-4">Điện thoại / Email</dt><dd class="col-sm-8" th:text="${(contract.tenantPhone ?: '—') + (contract.tenantEmail != null ? ' / ' + contract.tenantEmail : '')}"></dd>
+                <dt class="col-sm-4">CCCD/CMND</dt><dd class="col-sm-8" th:text="${contract.tenantIdNumber ?: '—'}"></dd>
+                <dt class="col-sm-4">Địa chỉ thường trú</dt><dd class="col-sm-8" th:text="${contract.tenantAddress ?: '—'}"></dd>
+                <dt class="col-sm-4">Ngày sinh</dt><dd class="col-sm-8" th:text="${contract.representative != null and contract.representative.dateOfBirth != null ? #temporals.format(contract.representative.dateOfBirth, 'dd/MM/yyyy') : '—'}"></dd>
+                <dt class="col-sm-4">Ngày lập</dt><dd class="col-sm-8" th:text="${contract.contractDate != null ? #temporals.format(contract.contractDate, 'dd/MM/yyyy') : '—'}"></dd>
+                <dt class="col-sm-4">Thời hạn</dt><dd class="col-sm-8" th:text="${#temporals.format(contract.startDate, 'dd/MM/yyyy') + ' đến ' + #temporals.format(contract.endDate, 'dd/MM/yyyy')}"></dd>
+                <dt class="col-sm-4">Đặt cọc</dt><dd class="col-sm-8" th:text="${contract.depositAmount != null ? #numbers.formatDecimal(contract.depositAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : '—'}"></dd>
+                <dt class="col-sm-4">Chu kỳ / ngày thanh toán</dt><dd class="col-sm-8" th:text="${contract.billingCycleMonths + ' tháng / ngày ' + (contract.paymentDay ?: '—')}"></dd>
+                <dt class="col-sm-4">Phương thức</dt><dd class="col-sm-8" th:text="${contract.paymentMethod ?: '—'}"></dd>
+                <dt class="col-sm-4">Tiền thuê / tháng</dt><dd class="col-sm-8" th:text="${contract.monthlyRent != null ? #numbers.formatDecimal(contract.monthlyRent, 0, 'COMMA', 0, 'POINT') + ' ₫' : '—'}"></dd>
+                <dt class="col-sm-4">Điện / nước</dt><dd class="col-sm-8" th:text="${(contract.monthlyElectricPrice ?: 0) + ' VNĐ/kWh / ' + (contract.monthlyWaterPrice ?: 0) + ' VNĐ/m³'}"></dd>
+                <dt class="col-sm-4">Internet / vệ sinh</dt><dd class="col-sm-8" th:text="${(contract.internetFee ?: 0) + ' / ' + (contract.sanitationFee ?: 0) + ' VNĐ/tháng'}"></dd>
+                <dt class="col-sm-4">Phí dịch vụ / khác</dt><dd class="col-sm-8" th:text="${(contract.serviceFee ?: 0) + ' / ' + (contract.otherServiceFee ?: 0) + ' VNĐ/tháng'}"></dd>
+            </dl>
+            <h3 class="h6 fw-bold mt-4">Điều khoản</h3>
+            <dl class="row">
+                <dt class="col-sm-4">Thanh toán</dt><dd class="col-sm-8" th:text="${contract.paymentTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Đặt cọc</dt><dd class="col-sm-8" th:text="${contract.depositTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Điện, nước và tiện ích</dt><dd class="col-sm-8" th:text="${contract.utilityTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Tài sản bàn giao</dt><dd class="col-sm-8" th:text="${contract.assetTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Sửa chữa</dt><dd class="col-sm-8" th:text="${contract.repairTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Chấm dứt</dt><dd class="col-sm-8" th:text="${contract.terminationTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Số người ở</dt><dd class="col-sm-8" th:text="${contract.occupantTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Gia hạn</dt><dd class="col-sm-8" th:text="${contract.renewalTerms ?: '—'}"></dd>
+                <dt class="col-sm-4">Trách nhiệm Chủ trọ</dt><dd class="col-sm-8" th:text="${contract.landlordResponsibilities ?: '—'}"></dd>
+                <dt class="col-sm-4">Trách nhiệm Người thuê</dt><dd class="col-sm-8" th:text="${contract.tenantResponsibilities ?: '—'}"></dd>
+                <dt class="col-sm-4">Điều khoản khác</dt><dd class="col-sm-8" th:text="${contract.additionalTerms ?: '—'}"></dd>
+            </dl>
+            <div class="no-print d-flex flex-wrap gap-2 mt-4">
+                <a class="btn btn-outline-secondary" th:href="@{/landlord/contracts}">Quay lại</a>
+                <a class="btn btn-primary" th:href="@{/landlord/contracts/{id}/edit(id=${contract.contractId})}">Sửa / gia hạn</a>
+                <button class="btn btn-outline-primary" type="button" onclick="window.print()">In / lưu PDF</button>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

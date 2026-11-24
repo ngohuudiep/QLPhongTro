@@ -21,6 +21,8 @@ public interface TenantRepository extends JpaRepository<Tenant, Integer> {
 
     Optional<Tenant> findByUser_Username(String username);
 
+    Optional<Tenant> findByUser_UserId(Integer userId);
+
     Optional<Tenant> findByTenantIdAndUser_Username(Integer tenantId, String username);
 
     boolean existsByUser_UserId(Integer userId);

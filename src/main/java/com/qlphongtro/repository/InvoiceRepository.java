@@ -32,4 +32,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Integer> {
     List<Invoice> findByContract_ContractIdAndContract_Room_Building_BuildingIdIn(Integer contractId, List<Integer> buildingIds);
 
     List<Invoice> findByStatus(String status);
+    List<Invoice> findByContract_Room_Building_Owner_UsernameOrderByPeriodStartDesc(String username);
+    List<Invoice> findByContract_ContractIdInOrderByPeriodStartDesc(List<Integer> contractIds);
+    boolean existsByContract_ContractIdAndPeriodStart(Integer contractId, java.time.LocalDate periodStart);
+    boolean existsByContract_Room_RoomIdAndPeriodStart(Integer roomId, java.time.LocalDate periodStart);
+    long countByContract_ContractIdAndStatus(Integer contractId, String status);
 }

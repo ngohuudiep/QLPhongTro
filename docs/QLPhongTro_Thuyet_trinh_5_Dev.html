@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>QLPhongTro — Thuyết trình nghiệp vụ 5 Dev</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07131d;
+      --panel: #102331;
+      --panel-2: #142b39;
+      --line: #284454;
+      --text: #eef7f7;
+      --muted: #a7bbc2;
+      --teal: #49dfc2;
+      --blue: #83b9ff;
+      --amber: #ffce75;
+      --red: #ff8e91;
+      --green: #88e0a4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.48 "Segoe UI", Arial, sans-serif;
+    }
+    .deck { min-height: 100vh; display: grid; place-items: center; padding: 28px 28px 78px; }
+    .slide {
+      display: none;
+      position: relative;
+      width: min(1200px, 100%);
+      aspect-ratio: 16 / 9;
+      min-height: 590px;
+      max-height: calc(100vh - 112px);
+      overflow: auto;
+      padding: clamp(32px, 5vw, 72px);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background:
+        radial-gradient(ellipse at 93% 5%, rgba(73,223,194,.13), transparent 36%),
+        linear-gradient(145deg, #0d202c, #091721 65%);
+      box-shadow: 0 30px 90px rgba(0,0,0,.32);
+    }
+    .slide.active { display: flex; flex-direction: column; justify-content: center; }
+    .slide::after {
+      content: "";
+      position: absolute;
+      width: 140px;
+      height: 5px;
+      right: 0;
+      top: 0;
+      background: var(--teal);
+      border-radius: 0 22px 0 8px;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: clamp(42px, 6vw, 76px); line-height: 1.04; letter-spacing: -.04em; margin-bottom: 20px; }
+    h2 { font-size: clamp(30px, 4vw, 48px); line-height: 1.12; letter-spacing: -.025em; margin-bottom: 24px; }
+    h3 { font-size: 19px; margin-bottom: 9px; }
+    p { color: var(--muted); margin-bottom: 12px; }
+    strong { color: var(--text); }
+    .eyebrow { color: var(--teal); text-transform: uppercase; letter-spacing: .16em; font-weight: 750; font-size: 12px; margin-bottom: 18px; }
+    .subtitle { font-size: clamp(18px, 2vw, 25px); max-width: 760px; }
+    .footer { position: absolute; left: clamp(32px, 5vw, 72px); right: clamp(32px, 5vw, 72px); bottom: 22px; display: flex; justify-content: space-between; gap: 20px; color: #7f9aa4; font-size: 12px; }
+    .grid { display: grid; gap: 14px; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .card { background: rgba(16,35,49,.88); border: 1px solid var(--line); border-radius: 15px; padding: 18px 20px; }
+    .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+    .card ul { padding-left: 19px; color: var(--muted); margin: 8px 0 0; }
+    li { margin: 5px 0; }
+    .number { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: rgba(73,223,194,.13); color: var(--teal); font-weight: 800; margin-bottom: 10px; }
+    .tag { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; margin: 3px 4px 3px 0; }
+    .tag.ok { border-color: rgba(136,224,164,.45); color: var(--green); }
+    .tag.warn { border-color: rgba(255,206,117,.45); color: var(--amber); }
+    .tag.info { border-color: rgba(131,185,255,.45); color: var(--blue); }
+    .accent { color: var(--teal); }
+    .amber { color: var(--amber); }
+    .red { color: var(--red); }
+    .muted { color: var(--muted); }
+    .big-number { font-size: 42px; line-height: 1; font-weight: 800; color: var(--teal); margin: 8px 0; }
+    .flow { display: flex; align-items: stretch; gap: 9px; }
+    .flow .step { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 13px; padding: 14px; }
+    .flow .arrow { align-self: center; color: var(--teal); font-size: 22px; font-weight: 800; }
+    .step b { display: block; margin-bottom: 5px; }
+    .code { color: #b7d9ff; font: 12px/1.45 Consolas, monospace; overflow-wrap: anywhere; }
+    .small { font-size: 13px; }
+    .callout { border-left: 4px solid var(--amber); padding: 13px 16px; background: rgba(255,206,117,.08); border-radius: 0 11px 11px 0; color: var(--muted); }
+    .source { color: #8da7b1; font-size: 11px; margin-top: auto; padding-top: 14px; }
+    .source a { color: #a8c9da; text-decoration: none; }
+    .source a:hover { color: var(--teal); text-decoration: underline; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .kpi { padding: 16px; background: var(--panel); border-radius: 13px; border: 1px solid var(--line); }
+    .kpi span { display: block; color: var(--muted); font-size: 13px; }
+    .kpi b { display: block; font-size: 27px; color: var(--teal); margin-top: 5px; }
+    .bar-wrap { background: #1c3441; height: 12px; border-radius: 99px; overflow: hidden; margin-top: 12px; }
+    .bar { width: 62.5%; height: 100%; background: linear-gradient(90deg, var(--teal), #a1e9c2); }
+    .controls { position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 13px; background: rgba(5,14,20,.94); border-top: 1px solid var(--line); }
+    button { font: inherit; }
+    .controls button { cursor: pointer; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 7px 13px; }
+    .controls button:hover { border-color: var(--teal); }
+    #counter { min-width: 60px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+    #progress { position: fixed; z-index: 5; left: 0; top: 0; height: 3px; width: 0; background: var(--teal); transition: width .2s ease; }
+    .cover-mark { display: grid; place-items: center; width: 78px; height: 78px; border: 1px solid rgba(73,223,194,.5); color: var(--teal); border-radius: 24px; font-size: 33px; margin-bottom: 25px; background: rgba(73,223,194,.08); }
+    .timeline { display: grid; grid-template-columns: repeat(5,1fr); gap: 9px; }
+    .timeline .card { border-top: 3px solid var(--teal); }
+    .demo-list { counter-reset: item; list-style: none; padding: 0; }
+    .demo-list li { counter-increment: item; display: flex; gap: 12px; margin: 9px 0; color: var(--muted); }
+    .demo-list li::before { content: counter(item, decimal-leading-zero); color: var(--teal); font: 700 13px Consolas, monospace; padding-top: 2px; }
+    @media (max-width: 780px) {
+      .deck { padding: 8px 8px 70px; }
+      .slide { min-height: calc(100vh - 90px); max-height: none; aspect-ratio: auto; padding: 30px 24px 60px; border-radius: 14px; }
+      .two, .three, .five { grid-template-columns: 1fr; }
+      .flow { flex-direction: column; }
+      .flow .arrow { transform: rotate(90deg); }
+      .timeline { grid-template-columns: 1fr; }
+      .footer { left: 24px; right: 24px; bottom: 15px; }
+    }
+    @media print {
+      @page { size: 13.333in 7.5in; margin: 0; }
+      body { background: #07131d !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .deck { display: block; padding: 0; }
+      .slide, .slide.active { display: flex !important; width: 13.333in; height: 7.5in; min-height: 0; max-height: none; aspect-ratio: auto; border: 0; border-radius: 0; box-shadow: none; page-break-after: always; break-after: page; overflow: hidden; }
+      .controls, #progress { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="progress"></div>
+<main class="deck" aria-live="polite">
+  <section class="slide active">
+    <div class="cover-mark">⌂</div>
+    <div class="eyebrow">Đề tài • Quản lý phòng trọ</div>
+    <h1>QL<span class="accent">PhongTro</span></h1>
+    <p class="subtitle">Thuyết trình nghiệp vụ và chức năng hệ thống<br><strong>Phân chia & phối hợp công việc của 5 Dev</strong></p>
+    <div class="pill-row"><span class="tag">Spring Boot</span><span class="tag">Java 17</span><span class="tag">Thymeleaf</span><span class="tag">SQL Server</span></div>
+    <div class="footer"><span>Kịch bản: từ tìm phòng đến vận hành & thu tiền</span><span>← → để chuyển slide • F để toàn màn hình • P để in/PDF</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">01 • Mục tiêu</div>
+    <h2>Một hệ thống cho toàn bộ vòng đời thuê phòng</h2>
+    <div class="grid three">
+      <article class="card"><div class="number">1</div><h3>Thu hút khách</h3><p>Đăng tin phòng, tìm kiếm theo nhu cầu, xem thông tin và tình trạng phòng.</p></article>
+      <article class="card"><div class="number">2</div><h3>Quản lý cư trú</h3><p>Quản lý tòa nhà, phòng, hồ sơ khách thuê, hợp đồng và người ở cùng.</p></article>
+      <article class="card"><div class="number">3</div><h3>Vận hành hàng tháng</h3><p>Chốt chỉ số, lập hóa đơn, ghi nhận thanh toán và xử lý sự cố.</p></article>
+    </div>
+    <p class="source">Stack và phiên bản căn cứ theo <span class="code">pom.xml</span> và cấu hình dự án.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">02 • Chia việc nhóm</div>
+    <h2>Năm Dev, năm vùng trách nhiệm</h2>
+    <div class="grid five">
+      <article class="card"><div class="number">1</div><h3>Dev 1</h3><p><strong>Hạ tầng, bảo mật & xác thực</strong></p><p class="small">Đăng nhập/đăng ký, OTP, cấu hình chung.</p></article>
+      <article class="card"><div class="number">2</div><h3>Dev 2</h3><p><strong>Portal & tin đăng</strong></p><p class="small">Tìm/lọc phòng, chi tiết, Dashboard.</p></article>
+      <article class="card"><div class="number">3</div><h3>Dev 3</h3><p><strong>Cơ sở vật chất & hồ sơ</strong></p><p class="small">Tòa nhà, phòng, tài sản, khách thuê.</p></article>
+      <article class="card"><div class="number">4</div><h3>Dev 4</h3><p><strong>Hợp đồng & đo đếm</strong></p><p class="small">Hợp đồng, người ở cùng, chỉ số, dịch vụ.</p></article>
+      <article class="card"><div class="number">5</div><h3>Dev 5</h3><p><strong>Tài chính & sự cố</strong></p><p class="small">Hóa đơn, thanh toán/công nợ, xử lý sự cố.</p></article>
+    </div>
+    <p class="source">Phân chia lấy theo bảng công việc nhóm cung cấp; các slide sau đối chiếu với code hiện có.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">03 • Kịch bản nghiệp vụ</div>
+    <h2>Từ phòng trống đến hoàn tất kỳ thuê</h2>
+    <div class="flow">
+      <div class="step"><b>01 • Tìm phòng</b><span class="small muted">Khách lọc và xem phòng</span></div><div class="arrow">›</div>
+      <div class="step"><b>02 • Quản lý dữ liệu</b><span class="small muted">Tòa nhà, phòng, khách thuê</span></div><div class="arrow">›</div>
+      <div class="step"><b>03 • Ký hợp đồng</b><span class="small muted">Gắn phòng và người thuê</span></div><div class="arrow">›</div>
+      <div class="step"><b>04 • Chốt chỉ số</b><span class="small muted">Đầu kỳ, cuối kỳ, tiêu thụ</span></div><div class="arrow">›</div>
+      <div class="step"><b>05 • Thu tiền</b><span class="small muted">Sinh hóa đơn, ghi thanh toán</span></div>
+    </div>
+    <div class="card" style="margin-top:18px"><h3>Nhánh vận hành song song</h3><p>Thiết bị/tài sản có vấn đề → tạo báo cáo sự cố → cập nhật ưu tiên, trạng thái và chi phí → đánh dấu hoàn thành.</p></div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">04 • Cách ứng dụng chạy</div>
+    <h2>Mẫu xử lý chung: request → nghiệp vụ → dữ liệu → giao diện</h2>
+    <div class="flow">
+      <div class="step"><b>Người dùng</b><span class="small muted">Bấm nút / gửi form</span></div><div class="arrow">›</div>
+      <div class="step"><b>Controller</b><span class="small muted">Nhận URL và tham số</span></div><div class="arrow">›</div>
+      <div class="step"><b>Service</b><span class="small muted">Kiểm tra & xử lý quy tắc</span></div><div class="arrow">›</div>
+      <div class="step"><b>Repository / JPA</b><span class="small muted">Đọc/ghi SQL Server</span></div><div class="arrow">›</div>
+      <div class="step"><b>Thymeleaf</b><span class="small muted">Trả trang / thông báo</span></div>
+    </div>
+    <div class="grid two" style="margin-top:17px">
+      <div class="card"><h3>Phân biệt quan trọng</h3><p><strong>Controller</strong> nhận yêu cầu và chọn trang. <strong>Service</strong> mới là nơi đặt luật nghiệp vụ, ví dụ tính tiền hay cập nhật trạng thái.</p></div>
+      <div class="card"><h3>Các tầng trong mã</h3><p class="code">controller → service → repository → entity → templates</p><p>Đọc từ điểm người dùng bấm vào service, rồi mới xuống database.</p></div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">05 • Dev 1</div>
+    <h2>Hạ tầng, bảo mật & xác thực</h2>
+    <div class="grid two">
+      <div class="card"><h3>Luồng người dùng</h3><ul><li>Đăng ký và kiểm tra dữ liệu tài khoản.</li><li>Đăng nhập, đăng xuất và xem hồ sơ.</li><li>Cập nhật hồ sơ/đổi mật khẩu.</li><li>Quên mật khẩu: tạo OTP, kiểm tra hạn, đặt mật khẩu mới.</li></ul></div>
+      <div class="card"><h3>Phân quyền và bảo vệ</h3><ul><li>Spring Security bảo vệ các URL cần đăng nhập.</li><li>BCrypt băm mật khẩu.</li><li>Vai trò ADMIN / STAFF / USER được hiển thị trên giao diện.</li><li>Trang công khai gồm portal tìm phòng và đăng nhập/đăng ký.</li></ul></div>
+    </div>
+    <div class="callout" style="margin-top:16px"><strong class="amber">Lưu ý khi demo:</strong> OTP hiện được trả về và hiển thị ngay trong màn hình demo; chưa phải gửi OTP qua email/SMS.</div>
+    <p class="source">Code: <span class="code">AuthController</span>, <span class="code">UserServiceImpl</span>, <span class="code">SecurityConfig</span>, <span class="code">layout/navbar.html</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">06 • Dev 2</div>
+    <h2>Portal khách & quản trị tin đăng</h2>
+    <div class="grid two">
+      <div class="card"><h3>Khách tìm phòng</h3><ul><li>Tìm theo từ khóa.</li><li>Lọc theo trạng thái, khoảng giá, tầng.</li><li>Sắp xếp danh sách.</li><li>Mở trang chi tiết và xem phòng gợi ý.</li></ul><p class="code">GET / • /rooms/list • /rooms/{id}</p></div>
+      <div class="card"><h3>Admin xem tổng quan</h3><ul><li>Tổng số phòng, phòng trống, đã thuê, bảo trì.</li><li>Tỷ lệ lấp đầy.</li><li>Ước tính doanh thu từ giá các phòng.</li><li>Admin quản lý tin đăng: thêm/sửa/xóa phòng.</li></ul><p class="code">GET /admin/dashboard • /admin/rooms</p></div>
+    </div>
+    <div class="callout" style="margin-top:16px">Số “doanh thu” trên Dashboard hiện được cộng từ giá phòng đang thuê, không phải báo cáo đối soát với các khoản Payment đã thu.</div>
+    <p class="source">Code: <span class="code">HomeController</span>, <span class="code">RoomListingServiceImpl</span>, <span class="code">AdminRoomController</span>, <span class="code">admin/dashboard.html</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">07 • Dev 3</div>
+    <h2>Cơ sở vật chất & hồ sơ khách thuê</h2>
+    <div class="grid three">
+      <article class="card"><div class="number">A</div><h3>Tòa nhà</h3><p>Tạo danh sách cơ sở, sửa thông tin, xóa và xem danh sách.</p><p class="code">/buildings</p></article>
+      <article class="card"><div class="number">B</div><h3>Phòng vật lý</h3><p>Quản lý phòng gắn tòa nhà; là dữ liệu được hợp đồng, chỉ số và sự cố tham chiếu.</p><p class="code">/rooms</p></article>
+      <article class="card"><div class="number">C</div><h3>Tài sản & khách thuê</h3><p>Ghi nhận tài sản, số lượng, tình trạng; lưu hồ sơ khách, tìm kiếm và kiểm tra CCCD trùng khi thêm.</p><p class="code">/assets • /tenants</p></article>
+    </div>
+    <div class="callout" style="margin-top:16px">Trong code có hai khái niệm cần phân biệt: tin đăng portal <span class="code">RoomListing</span> và hồ sơ phòng vận hành <span class="code">Room</span>. Đừng mặc định chúng là cùng một entity.</div>
+    <p class="source">Code: <span class="code">BuildingController</span>, <span class="code">RoomController</span>, <span class="code">AssetController</span>, <span class="code">TenantController</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">08 • Dev 4</div>
+    <h2>Hợp đồng, người ở cùng & đo đếm</h2>
+    <div class="grid two">
+      <div class="card"><h3>Hợp đồng</h3><ul><li>Chọn phòng và khách thuê.</li><li>Mặc định thời hạn 6 tháng, trạng thái ban đầu “Hiệu lực”.</li><li>Thêm người thuê vào hợp đồng.</li><li>Lưu hợp đồng có thể cập nhật phòng thành “Đang thuê”.</li></ul><p class="code">/contracts • /contracts/{id}/add-tenant</p></div>
+      <div class="card"><h3>Chỉ số điện/nước</h3><ul><li>Chọn phòng và kỳ tính.</li><li>Nhập chỉ số đầu/cuối; cuối không được nhỏ hơn đầu.</li><li>Tiêu thụ = chỉ số cuối − chỉ số đầu.</li><li>Lưu bản chốt để hóa đơn đọc theo tháng.</li></ul><p class="code">/meter-readings</p></div>
+    </div>
+    <div class="card" style="margin-top:15px"><h3>Dịch vụ & giá áp dụng</h3><p>Hóa đơn đọc dịch vụ gắn với phòng và khoảng hiệu lực. Danh mục service/repository đã có trong source; chưa thấy controller màn quản trị dịch vụ trong danh sách controller hiện tại.</p></div>
+    <p class="source">Code: <span class="code">ContractController</span>, <span class="code">ContractServiceImpl</span>, <span class="code">MeterReadingController</span>, <span class="code">MeterReading.java</span>, <span class="code">RoomService.java</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">09 • Dev 5 • Hóa đơn</div>
+    <h2>Tổng hợp các khoản thành hóa đơn tháng</h2>
+    <div class="flow">
+      <div class="step"><b>Tiền phòng</b><span class="small muted">Giá phòng áp dụng</span></div><div class="arrow">+</div>
+      <div class="step"><b>Tiền theo chỉ số</b><span class="small muted">Tiêu thụ × giá INDEX</span></div><div class="arrow">+</div>
+      <div class="step"><b>Dịch vụ cố định</b><span class="small muted">Các phí còn hiệu lực</span></div><div class="arrow">=</div>
+      <div class="step"><b>Tổng hóa đơn</b><span class="small muted">Sinh mã, kỳ và hạn đóng</span></div>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card"><h3>Đường đi trên ứng dụng</h3><p>Trang hóa đơn → chọn hợp đồng và tháng → POST <span class="code">/invoices/generate</span> → service tính tiền, lưu Invoice → quay lại danh sách → mở chi tiết.</p></div>
+      <div class="card"><h3>Quy tắc đang có</h3><p>Kỳ từ ngày 1 đến ngày cuối tháng; hạn đóng ngày 5 tháng kế; trạng thái mới “Chưa thanh toán”. Sinh hóa đơn là thao tác bấm form, không phải lịch tự chạy.</p></div>
+    </div>
+    <p class="source">Code trọng tâm: <span class="code">InvoiceController.generateInvoice</span>, <span class="code">InvoiceServiceImpl.generateMonthlyInvoice</span>, <span class="code">invoice/list.html</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">10 • Dev 5 • Thanh toán</div>
+    <h2>Mỗi lần thu tiền là một bản ghi Payment</h2>
+    <div class="grid three">
+      <div class="card"><div class="number">1</div><h3>Gửi thanh toán</h3><p>Nhập số tiền, phương thức, mã tham chiếu ở trang chi tiết hóa đơn.</p></div>
+      <div class="card"><div class="number">2</div><h3>Lưu giao dịch</h3><p>Service gán thời điểm nếu thiếu và lưu Payment liên kết hóa đơn.</p></div>
+      <div class="card"><div class="number">3</div><h3>Đối chiếu trạng thái</h3><p>Cộng các khoản đã ghi nhận; nếu tổng đã trả ≥ tổng hóa đơn thì chuyển “Đã thanh toán”.</p></div>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="kpi"><span>Ví dụ hóa đơn</span><b>5.000.000 ₫</b><p>Thanh toán lần 1: 2.000.000 ₫ → còn thiếu 3.000.000 ₫.</p></div>
+      <div class="kpi"><span>Sau thanh toán lần 2</span><b>Đã thanh toán</b><p>Trả thêm 3.000.000 ₫ → tổng đã trả đạt 5.000.000 ₫.</p></div>
+    </div>
+    <p class="source">Code: <span class="code">InvoiceController.payInvoice</span>, <span class="code">PaymentServiceImpl.processPayment</span>, <span class="code">invoice/detail.html</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">11 • Dev 5 • Sự cố</div>
+    <h2>Ghi nhận → giao xử lý → cập nhật kết quả</h2>
+    <div class="flow">
+      <div class="step"><b>Báo cáo</b><span class="small muted">Chọn phòng, mô tả, ưu tiên</span></div><div class="arrow">›</div>
+      <div class="step"><b>Tiếp nhận</b><span class="small muted">Mặc định Medium / Tiếp nhận</span></div><div class="arrow">›</div>
+      <div class="step"><b>Đang xử lý</b><span class="small muted">Sửa trạng thái, chi phí</span></div><div class="arrow">›</div>
+      <div class="step"><b>Hoàn thành</b><span class="small muted">Tự gán resolvedAt nếu trống</span></div>
+    </div>
+    <div class="grid two" style="margin-top:18px">
+      <div class="card"><h3>Dữ liệu theo dõi</h3><p>Phòng, tiêu đề, mức ưu tiên, trạng thái, chi phí sửa chữa, thời điểm báo và thời điểm hoàn thành.</p></div>
+      <div class="card"><h3>Giao diện hiện có</h3><p>Danh sách sự cố, tạo mới, sửa/cập nhật tiến độ, xóa và thông báo kết quả. Trạng thái gồm Tiếp nhận, Đang xử lý, Hoàn thành, Đã hủy.</p></div>
+    </div>
+    <div class="callout" style="margin-top:14px">“Báo cáo sự cố” hiện là màn CRUD theo dõi từng sự cố; chưa thấy báo cáo tổng hợp/biểu đồ/xuất file trong luồng này.</div>
+    <p class="source">Code: <span class="code">IncidentController</span>, <span class="code">IncidentServiceImpl.saveIncident</span>, <span class="code">incident/form.html</span>, <span class="code">incident/list.html</span>.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">12 • Demo xuyên suốt</div>
+    <h2>Demo 7 bước theo kịch bản thực tế</h2>
+    <ol class="demo-list">
+      <li><span>Vào trang chủ, tìm phòng theo từ khóa/giá/tầng; mở chi tiết phòng.</span></li>
+      <li><span>Đăng nhập vai trò quản lý; mở Dashboard và danh sách phòng.</span></li>
+      <li><span>Kiểm tra tòa nhà, phòng vật lý, hồ sơ khách thuê và tài sản của phòng.</span></li>
+      <li><span>Tạo hợp đồng hiệu lực và gắn người thuê cùng phòng.</span></li>
+      <li><span>Chốt chỉ số: ví dụ 1.200 → 1.300, tiêu thụ = 100.</span></li>
+      <li><span>Sinh hóa đơn tháng; kiểm tra kỳ, hạn, từng khoản và tổng tiền.</span></li>
+      <li><span>Ghi nhận hai lần thanh toán; mở lịch sử và xác nhận trạng thái.</span></li>
+    </ol>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">13 • Hành trình minh họa</div>
+    <h2>Một kỳ thuê, các Dev nối với nhau như thế nào?</h2>
+    <div class="timeline">
+      <article class="card"><div class="number">D2</div><h3>Tìm phòng</h3><p>Khách xem tin đăng và chọn phòng phù hợp.</p></article>
+      <article class="card"><div class="number">D3</div><h3>Chuẩn bị hồ sơ</h3><p>Quản lý phòng, tài sản và hồ sơ khách thuê.</p></article>
+      <article class="card"><div class="number">D4</div><h3>Ký & đo</h3><p>Lập hợp đồng; chốt chỉ số trong kỳ.</p></article>
+      <article class="card"><div class="number">D5</div><h3>Tính & thu</h3><p>Sinh hóa đơn, lưu payment và đối chiếu.</p></article>
+      <article class="card"><div class="number">D1</div><h3>Bảo vệ</h3><p>Xác thực tài khoản và giới hạn truy cập.</p></article>
+    </div>
+    <div class="card" style="margin-top:17px"><h3>Ví dụ minh họa công thức hiện tại</h3><p>Tiền phòng 4.500.000 + tiêu thụ 100 × 3.500 + phí cố định 150.000 = <strong class="accent">5.000.000 ₫</strong>. Ví dụ này chỉ minh họa cách cộng; cần kiểm tra loại điện/nước và đơn giá thực tế trong dữ liệu của nhóm.</p></div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">14 • Phạm vi code hiện tại</div>
+    <h2>Đã có và cần xác nhận trước khi giới thiệu</h2>
+    <div class="grid two">
+      <div class="card"><h3 class="accent">Đã thấy luồng trong source</h3><ul><li>Đăng nhập/đăng ký, hồ sơ, OTP demo.</li><li>Tìm/lọc phòng, dashboard và CRUD nhiều danh mục.</li><li>Hợp đồng, chỉ số, sinh hóa đơn theo thao tác.</li><li>Ghi nhận payment; cập nhật trạng thái khi đã trả đủ.</li><li>CRUD sự cố; tự gán thời điểm hoàn thành.</li></ul></div>
+      <div class="card"><h3 class="amber">Cần nói rõ giới hạn</h3><ul><li>OTP hiển thị trên trang demo, chưa gửi qua kênh email/SMS.</li><li>Chưa thấy quy trình đặt phòng cho khách trong controller hiện tại.</li><li>“Sinh tự động” hiện là bấm nút, chưa phải chạy theo lịch.</li><li>Điện/nước hiện dựa một mức tiêu thụ/giá INDEX; xác minh khi tách công tơ.</li><li>Dashboard doanh thu là ước tính theo giá phòng, không phải sổ thu Payment.</li><li>Sự cố chưa có màn báo cáo tổng hợp/xuất file.</li></ul></div>
+    </div>
+    <p class="source">Đây là mô tả theo các controller/service/template hiện có; không coi danh sách yêu cầu trong tài liệu thiết kế là bằng chứng tính năng đã hoàn tất.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow">15 • Tổng kết</div>
+    <h2>Thông điệp kết thúc</h2>
+    <div class="grid three">
+      <div class="card"><div class="big-number">01</div><h3>Quản lý phòng</h3><p>Portal và dữ liệu cơ sở giúp tìm phòng, quản lý nơi ở và cư dân.</p></div>
+      <div class="card"><div class="big-number">02</div><h3>Quản lý kỳ thuê</h3><p>Hợp đồng và chỉ số là đầu vào cho nghiệp vụ thu tiền hàng tháng.</p></div>
+      <div class="card"><div class="big-number">03</div><h3>Quản lý vận hành</h3><p>Thanh toán và sự cố giúp theo dõi hoạt động sau khi khách vào ở.</p></div>
+    </div>
+    <p class="subtitle" style="margin-top:22px"><strong>Giá trị của phân chia 5 Dev:</strong> mỗi module có chủ sở hữu, nhưng dữ liệu phải nối đúng từ phòng → hợp đồng → chỉ số → hóa đơn → thanh toán.</p>
+    <p class="accent" style="font-size:26px;font-weight:750;margin-top:12px">Xin cảm ơn — Q&A</p>
+  </section>
+</main>
+<nav class="controls" aria-label="Điều khiển trình chiếu">
+  <button id="prev" type="button" aria-label="Slide trước">← Trước</button>
+  <span id="counter"></span>
+  <button id="next" type="button" aria-label="Slide tiếp">Tiếp →</button>
+  <button id="fullscreen" type="button">Toàn màn hình</button>
+  <button id="print" type="button">In / PDF</button>
+</nav>
+<script>
+  (function () {
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const counter = document.getElementById("counter");
+    const progress = document.getElementById("progress");
+    let current = 0;
+
+    function show(index) {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => {
+        slide.classList.toggle("active", i === current);
+        slide.setAttribute("aria-hidden", i === current ? "false" : "true");
+      });
+      counter.textContent = `${current + 1} / ${slides.length}`;
+      progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+      history.replaceState(null, "", `#slide-${current + 1}`);
+    }
+
+    document.getElementById("prev").addEventListener("click", () => show(current - 1));
+    document.getElementById("next").addEventListener("click", () => show(current + 1));
+    document.getElementById("fullscreen").addEventListener("click", () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    });
+    document.getElementById("print").addEventListener("click", () => window.print());
+    document.addEventListener("keydown", event => {
+      if (["ArrowRight", "PageDown", " "].includes(event.key)) { event.preventDefault(); show(current + 1); }
+      if (["ArrowLeft", "PageUp"].includes(event.key)) { event.preventDefault(); show(current - 1); }
+      if (event.key === "Home") show(0);
+      if (event.key === "End") show(slides.length - 1);
+      if (event.key.toLowerCase() === "f") document.getElementById("fullscreen").click();
+      if (event.key.toLowerCase() === "p") window.print();
+    });
+    const initial = Number((location.hash.match(/slide-(\d+)/) || [])[1]) - 1;
+    show(Number.isInteger(initial) && initial >= 0 ? initial : 0);
+  })();
+</script>
+</body>
+</html>

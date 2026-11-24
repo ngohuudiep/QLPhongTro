@@ -1,188 +1,159 @@
 package com.qlphongtro.controller;
 
 import com.qlphongtro.entity.RoomListing;
+import com.qlphongtro.service.AdminWorkspaceService;
 import com.qlphongtro.service.RoomListingService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 @Controller
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminRoomController {
 
     private final RoomListingService roomListingService;
+    private final AdminWorkspaceService adminWorkspaceService;
+    private final com.qlphongtro.service.ReviewService reviewService;
 
-    @Autowired
-    public AdminRoomController(RoomListingService roomListingService) {
-        this.roomListingService = roomListingService;
+    public AdminRoomController(RoomListingService roomListingService, AdminWorkspaceService adminWorkspaceService) {
+        this(roomListingService, adminWorkspaceService, null);
     }
 
-    // ==============================================================
-    // 1. DASHBOARD QUẢN TRỊ (GET /admin/dashboard)
-    // ==============================================================
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminRoomController(RoomListingService roomListingService,
+                               AdminWorkspaceService adminWorkspaceService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.qlphongtro.service.ReviewService reviewService) {
+        this.roomListingService = roomListingService;
+        this.adminWorkspaceService = adminWorkspaceService;
+        this.reviewService = reviewService;
+    }
+
+    @ModelAttribute("pendingCount")
+    public long pendingCount() {
+        return adminWorkspaceService != null ? adminWorkspaceService.countPendingLandlords() : 0L;
+    }
+
+    private Map<String, Long> safeStats() {
+        Map<String, Long> stats = adminWorkspaceService != null ? adminWorkspaceService.getDashboardStats() : null;
+        if (stats == null) {
+            stats = new LinkedHashMap<>();
+        } else {
+            stats = new LinkedHashMap<>(stats);
+        }
+        for (String key : List.of("accountCount", "adminCount", "landlordCount", "tenantCount", "pendingLandlordCount",
+                "approvedLandlordCount", "listingCount", "listingOccupiedCount", "listingAvailableCount",
+                "listingMaintenanceCount", "managedRoomCount", "managedOccupiedCount", "managedAvailableCount",
+                "managedMaintenanceCount", "buildingCount", "activeContractCount")) {
+            stats.putIfAbsent(key, 0L);
+        }
+        return stats;
+    }
+
     @GetMapping("/admin/dashboard")
     public String showDashboard(Model model) {
-        List<RoomListing> allRooms = roomListingService.getAllRooms();
-
-        long totalRooms = allRooms.size();
-        long totalTrong = allRooms.stream().filter(r -> "TRONG".equals(r.getStatus())).count();
-        long totalDaThue = allRooms.stream().filter(r -> "DA_THUE".equals(r.getStatus())).count();
-        long totalBaoTri = allRooms.stream().filter(r -> "BAO_TRI".equals(r.getStatus())).count();
-
-        // Tỷ lệ lấp đầy (%)
-        double occupancyRate = totalRooms > 0 ? ((double) totalDaThue / totalRooms) * 100.0 : 0.0;
-
-        // Ước tính doanh thu tháng hiện tại từ các phòng ĐÃ THUÊ
-        BigDecimal monthlyRevenue = allRooms.stream()
-                .filter(r -> "DA_THUE".equals(r.getStatus()) && r.getPrice() != null)
-                .map(RoomListing::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Doanh thu tối đa nếu lấp đầy 100%
-        BigDecimal potentialRevenue = allRooms.stream()
-                .filter(r -> r.getPrice() != null)
-                .map(RoomListing::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        DecimalFormat df = new DecimalFormat("###,###,###");
-
-        model.addAttribute("totalRooms", totalRooms);
-        model.addAttribute("totalTrong", totalTrong);
-        model.addAttribute("totalDaThue", totalDaThue);
-        model.addAttribute("totalBaoTri", totalBaoTri);
-        model.addAttribute("occupancyRate", String.format("%.1f", occupancyRate));
-        model.addAttribute("monthlyRevenue", df.format(monthlyRevenue) + " đ");
-        model.addAttribute("potentialRevenue", df.format(potentialRevenue) + " đ");
-        model.addAttribute("recentRooms", allRooms.stream().limit(6).toList());
-
+        model.addAttribute("stats", safeStats());
+        model.addAttribute("reportedReviewsCount", reviewService != null ? reviewService.getReportedReviewsCount() : 0L);
+        model.addAttribute("activePage", "dashboard");
         return "admin/dashboard";
     }
 
-    // ==============================================================
-    // 2. DANH SÁCH TẤT CẢ PHÒNG (GET /admin/rooms)
-    // ==============================================================
     @GetMapping("/admin/rooms")
-    public String listAdminRooms(
-            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
-            @RequestParam(name = "status", required = false, defaultValue = "ALL") String status,
-            Model model) {
-
-        String cleanKeyword = (keyword != null) ? keyword.trim() : "";
-        String cleanStatus = (status != null && !status.trim().isEmpty()) ? status.trim().toUpperCase() : "ALL";
-
-        List<RoomListing> allRooms = roomListingService.getAllRooms();
-        long totalRooms = allRooms.size();
-        long totalTrong = allRooms.stream().filter(r -> "TRONG".equalsIgnoreCase(r.getStatus())).count();
-        long totalDaThue = allRooms.stream().filter(r -> "DA_THUE".equalsIgnoreCase(r.getStatus())).count();
-        long totalBaoTri = allRooms.stream().filter(r -> "BAO_TRI".equalsIgnoreCase(r.getStatus())).count();
-
-        List<RoomListing> rooms;
-        if (!cleanKeyword.isEmpty() || !cleanStatus.equals("ALL")) {
-            rooms = roomListingService.filterRooms(cleanKeyword, cleanStatus, "all", null, "newest");
-        } else {
-            rooms = allRooms;
-        }
-
-        model.addAttribute("rooms", rooms);
+    public String listAdminRooms(@RequestParam(name = "keyword", required = false) String keyword,
+                                 @RequestParam(name = "status", required = false, defaultValue = "ALL") String status,
+                                 @RequestParam(name = "ownerId", required = false) Integer ownerId,
+                                 Model model) {
+        String cleanKeyword = keyword == null ? "" : keyword.trim();
+        String cleanStatus = status == null || status.isBlank() ? "ALL" : status.trim().toUpperCase();
+        model.addAttribute("rooms", adminWorkspaceService != null ? adminWorkspaceService.getRoomListings(cleanKeyword, cleanStatus, ownerId) : List.of());
+        model.addAttribute("owners", adminWorkspaceService != null ? adminWorkspaceService.getLandlords() : List.of());
+        model.addAttribute("selectedOwnerId", ownerId);
         model.addAttribute("keyword", cleanKeyword);
         model.addAttribute("selectedStatus", cleanStatus);
-        model.addAttribute("totalRooms", totalRooms);
-        model.addAttribute("totalTrong", totalTrong);
-        model.addAttribute("totalDaThue", totalDaThue);
-        model.addAttribute("totalBaoTri", totalBaoTri);
-
+        model.addAttribute("stats", safeStats());
+        model.addAttribute("activePage", "rooms");
         return "admin/rooms";
     }
 
-    // ==============================================================
-    // 3. FORM THÊM MỚI PHÒNG (GET /admin/rooms/new)
-    // ==============================================================
     @GetMapping("/admin/rooms/new")
-    @PreAuthorize("hasRole('ADMIN')")
     public String showCreateForm(Model model) {
         RoomListing room = new RoomListing();
         room.setStatus("TRONG");
         room.setFloorNo(1);
         room.setAmenities("Điều hòa, Wifi, Nóng lạnh, Gác lửng");
         model.addAttribute("room", room);
-        model.addAttribute("isEdit", false);
+        prepareRoomForm(model, false);
         return "admin/room-form";
     }
 
-    // ==============================================================
-    // 4. FORM CHỈNH SỬA PHÒNG (GET /admin/rooms/edit/{id})
-    // ==============================================================
     @GetMapping("/admin/rooms/edit/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String showEditForm(@PathVariable("id") Integer id, Model model, RedirectAttributes redirectAttributes) {
+    public String showEditForm(@PathVariable Integer id, Model model, RedirectAttributes redirectAttributes) {
         try {
-            RoomListing room = roomListingService.getById(id);
-            model.addAttribute("room", room);
-            model.addAttribute("isEdit", true);
+            model.addAttribute("room", roomListingService.getById(id));
+            prepareRoomForm(model, true);
             return "admin/room-form";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy phòng: " + e.getMessage());
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/admin/rooms";
         }
     }
 
-    // ==============================================================
-    // 5. LƯU TẠO MỚI HOẶC CẬP NHẬT (POST /admin/rooms/save)
-    // ==============================================================
+    @GetMapping("/admin/rooms/{id}")
+    public String showRoomDetails(@PathVariable Integer id, Model model) {
+        model.addAttribute("room", roomListingService.getById(id));
+        model.addAttribute("activePage", "rooms");
+        return "admin/room-detail";
+    }
+
     @PostMapping("/admin/rooms/save")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String saveRoom(
-            @Valid @ModelAttribute("room") RoomListing room,
-            BindingResult bindingResult,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-
+    public String saveRoom(@Valid @ModelAttribute("room") RoomListing room,
+                           BindingResult bindingResult,
+                           @RequestParam(required = false) Integer ownerId,
+                           Model model,
+                           RedirectAttributes redirectAttributes) {
+        boolean editing = room.getListingId() != null;
         if (bindingResult.hasErrors()) {
-            model.addAttribute("isEdit", room.getListingId() != null);
             model.addAttribute("errorMessage", "Vui lòng kiểm tra lại các trường thông tin bị lỗi.");
+            prepareRoomForm(model, editing);
             return "admin/room-form";
         }
 
         try {
-            boolean isNew = (room.getListingId() == null);
-            roomListingService.save(room);
-            redirectAttributes.addFlashAttribute("successMessage",
-                    isNew ? "Thêm phòng mới thành công!" : "Cập nhật phòng thành công!");
+            adminWorkspaceService.saveRoomListing(room, ownerId);
+            redirectAttributes.addFlashAttribute("successMessage", editing
+                    ? "Cập nhật bài đăng phòng thành công!" : "Thêm bài đăng phòng thành công!");
             return "redirect:/admin/rooms";
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("isEdit", room.getListingId() != null);
-            model.addAttribute("errorMessage", e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            model.addAttribute("errorMessage", ex.getMessage());
+            prepareRoomForm(model, editing);
             return "admin/room-form";
         }
     }
 
-    // ==============================================================
-    // 6. XÓA PHÒNG (POST /admin/rooms/delete/{id})
-    // ==============================================================
     @PostMapping("/admin/rooms/delete/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String deleteRoom(@PathVariable("id") Integer id, RedirectAttributes redirectAttributes) {
+    public String deleteRoom(@PathVariable Integer id, RedirectAttributes redirectAttributes) {
         try {
-            roomListingService.delete(id);
-            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa phòng thành công khỏi hệ thống!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa phòng: " + e.getMessage());
+            adminWorkspaceService.deleteRoomListing(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa bài đăng phòng.");
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
         return "redirect:/admin/rooms";
     }
 
-    private long countByStatus(String status) {
-        return roomListingService.getAllRooms().stream()
-                .filter(r -> status.equals(r.getStatus()))
-                .count();
+    private void prepareRoomForm(Model model, boolean editing) {
+        model.addAttribute("isEdit", editing);
+        model.addAttribute("owners", adminWorkspaceService.getLandlords());
+        model.addAttribute("activePage", "rooms");
     }
 }

@@ -14,4 +14,6 @@ public interface RoomServiceRepository extends JpaRepository<RoomService, Intege
 
     // Tìm tất cả các phòng đang sử dụng một dịch vụ cụ thể
     List<RoomService> findByService_ServiceId(Integer serviceId);
+
+    boolean existsByRoom_RoomId(Integer roomId);
 }

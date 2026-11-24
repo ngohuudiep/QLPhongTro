@@ -12,6 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.http.HttpSession;
+import com.qlphongtro.entity.Role;
 
 @Controller
 public class AuthController {
@@ -31,10 +33,18 @@ public class AuthController {
             @RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "logout", required = false) String logout,
             @RequestParam(value = "registered", required = false) String registered,
+            @RequestParam(value = "expired", required = false) String expired,
+            HttpSession session,
             Model model) {
 
         if (error != null) {
-            model.addAttribute("errorMessage", "Thông tin tài khoản hoặc mật khẩu không chính xác.");
+            Object failureMessage = session != null ? session.getAttribute("loginErrorMessage") : null;
+            if (session != null) session.removeAttribute("loginErrorMessage");
+            model.addAttribute("errorMessage", failureMessage instanceof String message
+                    ? message : "Thông tin tài khoản hoặc mật khẩu không chính xác.");
+        }
+        if (expired != null) {
+            model.addAttribute("errorMessage", "Phiên đăng nhập đã bị thu hồi do tài khoản bị khóa hoặc thay đổi trạng thái.");
         }
         if (logout != null) {
             model.addAttribute("successMessage", "Bạn đã đăng xuất khỏi hệ thống thành công.");
@@ -71,8 +81,12 @@ public class AuthController {
         }
 
         try {
-            userService.registerUser(request);
-            redirectAttributes.addFlashAttribute("successMessage", "Đăng ký thành công! Hãy đăng nhập ngay.");
+            User registeredUser = userService.registerUser(request);
+            String successMessage = registeredUser != null && registeredUser.getRole() != null
+                    && Role.LANDLORD.equalsIgnoreCase(Role.normalizeRoleName(registeredUser.getRole().getRoleName()))
+                    ? "Đăng ký tài khoản thành công! Tài khoản của bạn đang chờ Admin xét duyệt. Bạn sẽ có thể đăng nhập sau khi tài khoản được phê duyệt."
+                    : "Đăng ký thành công! Hãy đăng nhập ngay.";
+            redirectAttributes.addFlashAttribute("successMessage", successMessage);
             return "redirect:/login?registered=true";
         } catch (IllegalArgumentException e) {
             model.addAttribute("errorMessage", e.getMessage());

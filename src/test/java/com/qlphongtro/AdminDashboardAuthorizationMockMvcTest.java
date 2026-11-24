@@ -24,6 +24,9 @@ class AdminDashboardAuthorizationMockMvcTest {
     @Autowired MockMvc mockMvc;
     @MockBean RoomListingService roomListingService;
     @MockBean CustomUserDetailsService userDetailsService;
+    @MockBean com.qlphongtro.service.AdminWorkspaceService adminWorkspaceService;
+    @MockBean com.qlphongtro.repository.BuildingRepository buildingRepository;
+    @MockBean com.qlphongtro.repository.UserRepository userRepository;
 
     @Test
     @WithMockUser(roles = "ADMIN")

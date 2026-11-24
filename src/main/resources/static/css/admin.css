@@ -1,0 +1,55 @@
+:root {
+    --admin-ink: #17233b;
+    --admin-muted: #748099;
+    --admin-line: #e7ebf2;
+    --admin-teal: #087f8c;
+    --admin-sidebar: #13233d;
+    --admin-surface: #fff;
+    --admin-bg: #f4f7fb;
+}
+
+body.admin-app { margin: 0; background: var(--admin-bg); color: var(--admin-ink); font-family: "Be Vietnam Pro", system-ui, sans-serif; }
+.admin-layout { min-height: 100vh; }
+.admin-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 1030; width: 258px; padding: 22px 16px; background: var(--admin-sidebar); color: #fff; display: flex; flex-direction: column; }
+.admin-brand { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; font-weight: 800; font-size: 1.02rem; padding: 4px 8px 26px; }
+.admin-brand:hover { color: #fff; }
+.admin-brand-icon { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg,#0f9ba5,#2b6cb0); font-size: 1.25rem; }
+.admin-brand small { display: block; font-size: .64rem; letter-spacing: .16em; color: #95a9c5; margin-top: 3px; }
+.admin-nav-label { margin: 12px 10px 8px; color: #8092ae; font-size: .68rem; letter-spacing: .13em; text-transform: uppercase; }
+.admin-nav { display: grid; gap: 5px; }
+.admin-nav a { color: #c5d0e0; text-decoration: none; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; font-size: .88rem; transition: background .15s ease,color .15s ease; }
+.admin-nav a i { width: 19px; font-size: 1.02rem; }
+.admin-nav a:hover,.admin-nav a.active { color: #fff; background: rgba(39,180,185,.18); }
+.admin-nav a.active { box-shadow: inset 3px 0 #32c3bd; }
+.admin-nav .badge { margin-left: auto; }
+.admin-sidebar-footer { margin-top: auto; color: #8ea1bd; font-size: .76rem; padding: 14px 10px 2px; border-top: 1px solid rgba(255,255,255,.1); }
+.admin-main { min-height: 100vh; margin-left: 258px; padding: 0 30px 34px; }
+.admin-topbar { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--admin-line); margin-bottom: 26px; }
+.admin-topbar h1 { margin: 0; font-size: 1.4rem; font-weight: 750; }
+.admin-eyebrow { color: var(--admin-muted); font-size: .68rem; letter-spacing: .13em; margin-bottom: 5px; }
+.admin-user { display: flex; align-items: center; gap: 9px; font-size: .86rem; font-weight: 650; }
+.admin-avatar { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #e3f2f3; color: var(--admin-teal); }
+.admin-panel { background: var(--admin-surface); border: 1px solid var(--admin-line); border-radius: 14px; box-shadow: 0 6px 24px rgba(26,43,73,.045); }
+.admin-panel-heading { padding: 17px 20px; border-bottom: 1px solid var(--admin-line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.admin-panel-heading h2 { font-size: 1rem; margin: 0; font-weight: 700; }
+.admin-kpi { height: 100%; background: var(--admin-surface); border: 1px solid var(--admin-line); border-radius: 14px; padding: 18px; box-shadow: 0 6px 24px rgba(26,43,73,.04); }
+.admin-kpi-label { color: var(--admin-muted); font-size: .78rem; }
+.admin-kpi-value { font-size: 1.8rem; font-weight: 800; margin: 7px 0 2px; }
+.admin-kpi-icon { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 1.1rem; }
+.admin-table { margin-bottom: 0; vertical-align: middle; }
+.admin-table thead th { color: var(--admin-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; border-bottom-width: 1px; white-space: nowrap; }
+.admin-empty { padding: 32px 12px !important; color: var(--admin-muted); text-align: center; }
+.admin-content { max-width: 1500px; margin: auto; }
+.admin-mobile-menu { display: none; }
+@media (max-width: 991.98px) {
+    .admin-sidebar { transform: translateX(-100%); transition: transform .2s ease; }
+    .admin-sidebar.show { transform: translateX(0); }
+    .admin-main { margin-left: 0; padding: 0 18px 26px; }
+    .admin-mobile-menu { display: inline-flex; }
+}
+@media (max-width: 575.98px) {
+    .admin-topbar { min-height: 72px; margin-bottom: 18px; }
+    .admin-topbar h1 { font-size: 1.12rem; }
+    .admin-kpi { padding: 14px; }
+    .admin-kpi-value { font-size: 1.45rem; }
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chi tiết yêu cầu thuê - QLPhongTro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/landlord.css}">
+    <style>.request-detail{display:grid;gap:1rem}.detail-panel{background:#fff;border:1px solid #e8edf4;border-radius:16px;padding:1.25rem}.detail-fact{padding:.7rem 0;border-bottom:1px solid #eef1f5}.detail-fact:last-child{border-bottom:0}.detail-image{width:100%;max-height:300px;object-fit:cover;border-radius:12px;background:#eef2f7}.detail-label{color:#69778c;font-size:.84rem}.detail-value{font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere}</style>
+</head>
+<body class="landlord-app">
+<div class="landlord-layout">
+    <div th:replace="~{landlord/fragments :: sidebar(${activePage})}"></div>
+    <main class="landlord-main">
+        <div th:replace="~{landlord/fragments :: topbar('Chi tiết yêu cầu thuê')}"></div>
+        <div th:replace="~{landlord/fragments :: alerts}"></div>
+        <div class="request-detail">
+            <header class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div><a class="small text-decoration-none" th:href="@{/landlord/rental/requests}"><i class="bi bi-arrow-left me-1"></i>Danh sách yêu cầu</a><h2 class="h4 fw-bold mt-2 mb-1" th:text="${'Yêu cầu #' + rentalRequest.requestId}"></h2><p class="text-secondary mb-0" th:text="${rentalRequest.statusLabel}"></p></div>
+                <div class="d-flex flex-wrap gap-2">
+                    <form th:if="${rentalRequest.status == 'PENDING_LANDLORD_REVIEW'}" th:action="@{/landlord/rental/requests/{id}/approve(id=${rentalRequest.requestId})}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button class="btn btn-primary" type="submit" onclick="return confirm('Duyệt yêu cầu và tạo bản nháp hợp đồng?')"><i class="bi bi-check2-circle me-1"></i>Duyệt và soạn hợp đồng</button>
+                    </form>
+                    <a class="btn btn-outline-primary" th:if="${contract != null and (contract.status == 'DRAFT' or contract.status == 'TENANT_REJECTED')}" th:href="@{/landlord/rental/contracts/{id}/edit(id=${contract.contractId})}"><i class="bi bi-pencil-square me-1"></i>Xem / sửa bản nháp</a>
+                    <a class="btn btn-outline-primary" th:if="${contract != null and contract.status != 'DRAFT' and contract.status != 'TENANT_REJECTED'}" th:href="@{/landlord/rental/contracts/{id}(id=${contract.contractId})}"><i class="bi bi-file-earmark-text me-1"></i>Xem hợp đồng</a>
+                </div>
+            </header>
+            <div class="row g-3">
+                <div class="col-12 col-xl-5">
+                    <section class="detail-panel h-100">
+                        <img class="detail-image mb-3" th:src="${rentalRequest.room.imageUrl}" alt="Ảnh phòng">
+                        <div class="d-flex justify-content-between align-items-start gap-2"><div><div class="text-secondary small" th:text="${rentalRequest.room.roomCode}"></div><h3 class="h5 fw-bold" th:text="${rentalRequest.room.title}"></h3></div><strong class="text-primary text-nowrap" th:text="${rentalRequest.room.price != null ? #numbers.formatDecimal(rentalRequest.room.price,0,'COMMA',0,'POINT') + ' ₫/tháng' : 'Chưa cấu hình'}"></strong></div>
+                        <div class="detail-fact"><div class="detail-label">Địa chỉ khu trọ</div><div class="detail-value" th:text="${rentalRequest.room.managedRoom != null and rentalRequest.room.managedRoom.building != null ? rentalRequest.room.managedRoom.building.address : 'Chưa có thông tin'}"></div></div>
+                        <div class="detail-fact"><div class="detail-label">Diện tích</div><div class="detail-value" th:text="${rentalRequest.room.area != null ? rentalRequest.room.area + ' m²' : '—'}"></div></div>
+                        <div class="detail-fact"><div class="detail-label">Ngày nhận phòng dự kiến</div><div class="detail-value" th:text="${rentalRequest.expectedMoveInDate != null ? #temporals.format(rentalRequest.expectedMoveInDate,'dd/MM/yyyy') : '—'}"></div></div>
+                        <div class="detail-fact"><div class="detail-label">Số người dự kiến</div><div class="detail-value" th:text="${rentalRequest.expectedOccupants != null ? rentalRequest.expectedOccupants : '—'}"></div></div>
+                        <div class="detail-fact"><div class="detail-label">Tiện nghi</div><div class="detail-value" th:text="${rentalRequest.room.amenities ?: 'Chưa cấu hình'}"></div></div>
+                    </section>
+                </div>
+                <div class="col-12 col-xl-7">
+                    <section class="detail-panel mb-3">
+                        <h3 class="h6 fw-bold mb-3"><i class="bi bi-person-vcard me-2 text-primary"></i>Thông tin người đăng ký</h3>
+                        <div class="row g-3">
+                            <div class="col-sm-6"><div class="detail-label">Họ và tên</div><div class="detail-value" th:text="${rentalRequest.fullName ?: rentalRequest.user.fullName ?: '—'}"></div></div>
+                            <div class="col-sm-6"><div class="detail-label">Tài khoản</div><div class="detail-value" th:text="${rentalRequest.user.username}"></div></div>
+                            <div class="col-sm-6"><div class="detail-label">Số điện thoại</div><div class="detail-value" th:text="${rentalRequest.phone ?: rentalRequest.user.phone ?: '—'}"></div></div>
+                            <div class="col-sm-6"><div class="detail-label">Email</div><div class="detail-value" th:text="${rentalRequest.user.email ?: '—'}"></div></div>
+                            <div class="col-sm-6"><div class="detail-label">CCCD / CMND</div><div class="detail-value" th:text="${rentalRequest.idNumber ?: 'Chưa cung cấp'}"></div></div>
+                            <div class="col-sm-6"><div class="detail-label">Gửi yêu cầu lúc</div><div class="detail-value" th:text="${rentalRequest.requestDate != null ? #temporals.format(rentalRequest.requestDate,'dd/MM/yyyy HH:mm') : '—'}"></div></div>
+                            <div class="col-12"><div class="detail-label">Ghi chú của người thuê</div><div class="detail-value" th:text="${rentalRequest.note ?: 'Không có ghi chú'}"></div></div>
+                        </div>
+                    </section>
+                    <section class="detail-panel" th:if="${rentalRequest.status == 'PENDING_LANDLORD_REVIEW'}">
+                        <h3 class="h6 fw-bold mb-3"><i class="bi bi-shield-check me-2 text-primary"></i>Quyết định xử lý</h3>
+                        <p class="small text-secondary">Khi duyệt, hệ thống tạo bản nháp dựa trên thông tin phòng và yêu cầu. Bạn sẽ xem lại, bổ sung dữ liệu còn thiếu và gửi hợp đồng ở bước tiếp theo.</p>
+                        <form th:action="@{/landlord/rental/requests/{id}/reject(id=${rentalRequest.requestId})}" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <label class="form-label" for="rejectReason">Lý do từ chối</label>
+                            <div class="input-group"><input id="rejectReason" class="form-control" name="reason" maxlength="500" required placeholder="Nêu lý do để người thuê biết"><button class="btn btn-outline-danger" type="submit" onclick="return confirm('Từ chối yêu cầu này và trả phòng về trạng thái trống?')">Từ chối</button></div>
+                        </form>
+                    </section>
+                    <section class="detail-panel" th:if="${contract != null}">
+                        <h3 class="h6 fw-bold"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Hợp đồng liên quan</h3>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2"><span><strong th:text="${contract.contractCode}"></strong><small class="d-block text-secondary" th:text="${contract.statusLabel}"></small></span><a class="btn btn-sm btn-outline-primary" th:href="${contract.status == 'DRAFT' or contract.status == 'TENANT_REJECTED' ? '/landlord/rental/contracts/' + contract.contractId + '/edit' : '/landlord/rental/contracts/' + contract.contractId}">Mở hợp đồng</a></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
